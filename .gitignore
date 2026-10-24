@@ -4,3 +4,5 @@ _assets_dl
 .vercel
 *.log
 tsconfig.tsbuildinfo
+
+.vercel
