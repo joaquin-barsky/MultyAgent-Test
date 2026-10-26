@@ -22,7 +22,8 @@ Se ven en una página con una oficina en formato 3D: cada agente con lo que est�
 
 ## Cómo se corre y se deploya
 - Local: `preview_start` con el nombre `orik-crew` (puerto 5191). Está en `C:\Users\joaqu\.claude\launch.json`.
-- Producción: https://orik-crew.vercel.app (proyecto Vercel `orik-crew`). Por ahora se sube con `vercel deploy --prod --yes`. **No hay repo en GitHub todavía** (no está instalado `gh`); el git es solo local.
+- Producción: https://orik-crew.vercel.app (proyecto Vercel `orik-crew`).
+- Repo: https://github.com/joaquin-barsky/MultyAgent-Test (rama `main`). Vercel está conectado al repo: push a `main` despliega solo.
 - Stack: Vite 8 + React 19 + TS + Tailwind v4 + motion/react + lucide; 3D con React Three Fiber + drei; diagramas con React Flow (@xyflow/react); estado con zustand; íconos de marcas con simple-icons.
 - Modelos 3D: Kenney Furniture Kit y Mini Characters (licencia CC0) en `public/models`. Avatares en `public/avatars/face-*.png`, sacados de los mismos modelos con `/?gen=avatars` (solo en dev, guarda vía el plugin de `vite.config.ts`).
 
@@ -34,10 +35,10 @@ Se ven en una página con una oficina en formato 3D: cada agente con lo que est�
 - Circuito: Mora → Lupa → Cata → Rolo → Mora; Leo (arranca solo con consultas) → Nina → Mora.
 
 ## Le gustó / no tocar
-- (todavía no eligió variante)
+- Le gustó la demo en general (3 variantes + panel estilo n8n). Todavía no eligió variante.
 
 ## Pendientes
+- Antes de configurar agentes reales, Joaquín quiere **definir bien la idea y el diseño**. Va a pasar indicaciones.
 - Que Joaquín elija variante (1, 2 o 3) y sacar el selector.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.
-- Crear repo en GitHub para auto-deploy (falta `gh` o crearlo a mano).
 - Ojo: el panel del navegador de Claude oculto frena la carga 3D (no es un problema real del sitio: con el panel visible carga en ~1 s).
