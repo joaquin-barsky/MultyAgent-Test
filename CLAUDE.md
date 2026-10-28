@@ -22,6 +22,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Página: gratis (Vercel Hobby, 1 función usada de 12).
 - Chat de Bruno: cada pregunta gasta ~3.000 tokens de entrada y ~300 de salida con Haiku 5.5 → unos USD 0,0005. USD 5 de crédito alcanzan para ~10.000 preguntas.
 - La API se paga aparte del plan de Claude de USD 100/mes: el chat **no consume nada** de ese plan.
+- En la consola hay **USD 100 de crédito promocional** (dado el 28/10/2026, **vence el 16/11/2026**, una sola vez, no es mensual). Sirve para API, Batch, Agent SDK, Playground y Managed Agents. No hay tarjeta cargada ni crédito comprado. Límite de la organización: USD 500/mes (no tocado).
 - Precios por millón de tokens (entrada/salida): Haiku 5.5 USD 0,10/0,50; Sonnet 5.5 USD 2/10; Opus 5.5 USD 4/20. Batch = 50% off.
 - Para venderlo a clientes hace falta API (la suscripción personal no sirve para dar servicio a terceros).
 
@@ -29,7 +30,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Local: `preview_start` con el nombre `orik-crew` (puerto 5191). Está en `C:\Users\joaqu\.claude\launch.json`. En dev, `/api/chat` lo sirve un plugin de `vite.config.ts`.
 - Producción: https://orik-crew.vercel.app (proyecto Vercel `orik-crew`).
 - Repo: https://github.com/joaquin-barsky/MultyAgent-Test (rama `main`). Push a `main` despliega solo.
-- Clave de IA: variable `ANTHROPIC_API_KEY` en Vercel (Production). **Todavía no está cargada.**
+- Clave de IA: variable `ANTHROPIC_API_KEY` en Vercel (Production), cargada el 2026-10-28. Es la clave `bruno-chat` del espacio de trabajo **Orik Crew demo** de la consola (platform.claude.com), con tope de **USD 5 por mes**. **Vence el 27/11/2026**: hay que crear otra y cargarla antes. Si vence, el chat pasa solo al modo automático.
 - Stack: Vite 8 + React 19 + TS + Tailwind v4 + motion/react + lucide; 3D con React Three Fiber + drei (CameraControls); diagramas con React Flow (@xyflow/react); estado con zustand; íconos de marcas con simple-icons; `@anthropic-ai/sdk` en la función.
 - Chequeo de tipos de la función: `npx tsc -p tsconfig.api.json`.
 - Modelos 3D: Kenney Furniture Kit y Mini Characters (CC0) en `public/models`. Fotos de propiedades de Unsplash en `public/img`. Avatares `public/avatars/face-*.png` generados con `/?gen=avatars` (solo dev).
@@ -49,6 +50,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Pidió: menos "jueguito", sin marca, formato edificio con un piso por área, diagrama más marketinero y complejo, y supervisor con chat. Hecho el 2026-10-28; falta que lo vea y elija estilo (Maqueta o Vidrio).
 
 ## Pendientes
-- Cargar la clave de Anthropic (Joaquín) y probar el chat real en producción.
+- Renovar la clave `bruno-chat` antes del 27/11/2026.
+- Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
 - Que Joaquín elija Maqueta o Vidrio y sacar el selector.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.
