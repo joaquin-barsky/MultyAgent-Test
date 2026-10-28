@@ -24,6 +24,27 @@ function saveAvatars(): Plugin {
   }
 }
 
+// Solo en desarrollo: corre la función /api/chat como lo hace Vercel
+function devApi(): Plugin {
+  return {
+    name: 'dev-api',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/api/chat', (req, res) => {
+        let body = ''
+        req.on('data', (c) => (body += c))
+        req.on('end', async () => {
+          const mod = (await server.ssrLoadModule('/api/chat.ts')) as { POST: (r: Request) => Promise<Response> }
+          const out = await mod.POST(new Request('http://localhost/api/chat', { method: 'POST', body, headers: { 'content-type': 'application/json' } }))
+          res.statusCode = out.status
+          res.setHeader('content-type', 'application/json')
+          res.end(await out.text())
+        })
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), saveAvatars()],
+  plugins: [react(), tailwindcss(), saveAvatars(), devApi()],
 })

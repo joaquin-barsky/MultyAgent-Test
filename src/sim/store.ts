@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { AGENTS, AGENT_BY_ID, type Agent } from '../data/agents'
+import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
 
 export type Status = 'idle' | 'working'
 
@@ -41,6 +41,10 @@ interface State {
   minutes: number
   selected: string | null
   select: (id: string | null) => void
+  floor: FloorId | null
+  chat: boolean
+  setChat: (v: boolean) => void
+  setFloor: (f: FloorId | null) => void
   start: (id: string, note?: string) => void
   tick: (dt: number) => void
 }
@@ -59,11 +63,17 @@ export const useCrew = create<State>((set, get) => ({
     { id: 'mora', at: performance.now() + 400 },
     { id: 'cata', at: performance.now() + 1400 },
     { id: 'leo', at: performance.now() + 2600 },
+    { id: 'teo', at: performance.now() + 3800 },
+    { id: 'paz', at: performance.now() + 5200 },
   ],
-  tasks: 128,
-  minutes: 2262,
+  tasks: 214,
+  minutes: 3912,
   selected: null,
   select: (id) => set({ selected: id }),
+  floor: null,
+  chat: false,
+  setChat: (v) => set({ chat: v }),
+  setFloor: (f) => set({ floor: f }),
 
   start: (id, note) => {
     const r = get().runs[id]
@@ -90,7 +100,7 @@ export const useCrew = create<State>((set, get) => ({
         runs[a.id] = { ...r, idleFor: r.idleFor + dt }
         if (a.selfStart && r.idleFor + dt > a.selfStart && !queue.some((q) => q.id === a.id)) {
           queue = [...queue, { id: a.id, at: now }]
-          feed = [{ id: seq++, at: Date.now(), from: a.id, text: 'recibió una consulta nueva por WhatsApp' }, ...feed]
+          feed = [{ id: seq++, at: Date.now(), from: a.id, text: a.selfStartText ?? 'arrancó solo' }, ...feed]
         }
         continue
       }

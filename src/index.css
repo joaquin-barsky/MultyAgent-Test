@@ -7,49 +7,175 @@
   --font-display: 'Bricolage Grotesque Variable', 'Figtree Variable', sans-serif;
 }
 
-/* temas por variante */
+
+/* diagrama: piezas nuevas */
+.fprev {
+  margin-top: 8px;
+  width: 150px;
+  padding: 7px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 18px -14px rgba(0, 0, 0, 0.4);
+}
+.fbolt {
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  background: #ff8a00;
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--flow);
+}
+.fsub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 80px;
+  text-align: center;
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+.fsub-dot {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 99px;
+  background: var(--card);
+  border: 2px dashed var(--edge);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.fsub.on .fsub-dot {
+  border-color: var(--c);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 15%, transparent);
+}
+.fhandle-sub {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 2px !important;
+  transform: translate(-50%, 50%) rotate(45deg) !important;
+}
+.fsection {
+  border-radius: 26px;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 30%, transparent);
+  background: color-mix(in srgb, var(--c) 4%, transparent);
+  transition: background 0.3s, border-color 0.3s;
+}
+.fsection.on {
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+  border-color: color-mix(in srgb, var(--c) 60%, transparent);
+}
+.fsection-title {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fsection-n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--c);
+  color: #fff;
+  font-size: 12px;
+}
+.fitems.cond {
+  background: var(--c);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+}
+.fminimap {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--card) !important;
+}
+.panel-head {
+  background: radial-gradient(90% 140% at 100% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 60%);
+}
+.runbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--card);
+  flex-wrap: wrap;
+}
+.runbar-track {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 140px;
+  height: 8px;
+}
+.runbar-seg {
+  position: relative;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+}
+.runbar-seg > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  transition: width 0.2s linear;
+}
+.runbar-hist {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, #22b35e 12%, transparent);
+  color: #15924a;
+}
+
+/* temas: claro de día, oscuro de noche y madrugada */
 :root,
 [data-theme='dia'] {
-  --bg: #ffe7d6;
-  --bg2: #ffd5c0;
-  --ink: #1f1a17;
-  --muted: #7a6a5f;
+  --bg: #f4f7fa;
+  --ink: #14202b;
+  --muted: #5e6b78;
   --card: #ffffff;
-  --glass: rgba(255, 252, 249, 0.86);
-  --line: rgba(31, 26, 23, 0.09);
-  --edge: #d9c8bc;
-  --dots: #e8d6ca;
-  --flow: #fff9f4;
-  --accent: #ff5a36;
-  --shadow: 0 18px 50px -18px rgba(150, 70, 30, 0.35), 0 2px 6px rgba(150, 70, 30, 0.08);
+  --glass: rgba(255, 255, 255, 0.84);
+  --line: rgba(20, 32, 43, 0.09);
+  --edge: #d3dbe3;
+  --dots: #d9e1e9;
+  --flow: #f6f8fb;
+  --accent: #2e7dff;
+  --shadow: 0 18px 50px -20px rgba(30, 60, 100, 0.35), 0 2px 6px rgba(30, 60, 100, 0.08);
 }
 [data-theme='noche'] {
-  --bg: #071216;
-  --bg2: #0c2128;
-  --ink: #eef6f4;
-  --muted: #8ea7a5;
-  --card: #10242a;
-  --glass: rgba(12, 30, 36, 0.84);
-  --line: rgba(220, 255, 245, 0.1);
-  --edge: #2c4a52;
-  --dots: #1d3940;
-  --flow: #0a1a1f;
-  --accent: #3dffb0;
-  --shadow: 0 18px 60px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(120, 255, 210, 0.06);
-}
-[data-theme='cielo'] {
-  --bg: #dff3ff;
-  --bg2: #ffe3f1;
-  --ink: #14202b;
-  --muted: #5f6f7d;
-  --card: #ffffff;
-  --glass: rgba(255, 255, 255, 0.82);
-  --line: rgba(20, 32, 43, 0.09);
-  --edge: #cfd9e2;
-  --dots: #dbe5ee;
-  --flow: #f7fbff;
-  --accent: #ff3d9a;
-  --shadow: 0 18px 50px -18px rgba(40, 80, 140, 0.35), 0 2px 6px rgba(40, 80, 140, 0.08);
+  --bg: #0b1622;
+  --ink: #eef3f8;
+  --muted: #92a3b5;
+  --card: #111f2d;
+  --glass: rgba(14, 26, 38, 0.84);
+  --line: rgba(220, 235, 255, 0.1);
+  --edge: #2b3d50;
+  --dots: #1c2c3c;
+  --flow: #0c1824;
+  --accent: #5ea2ff;
+  --shadow: 0 18px 60px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(150, 190, 255, 0.06);
 }
 
 html,
@@ -70,12 +196,6 @@ body {
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
-}
-.stage {
-  background: radial-gradient(120% 90% at 70% 10%, var(--bg2), var(--bg) 60%);
-}
-[data-theme='cielo'] .stage {
-  background: linear-gradient(170deg, #cfeeff 0%, #e9f6ff 45%, #ffe1f0 100%);
 }
 button {
   cursor: pointer;
@@ -130,26 +250,110 @@ button:disabled {
 .floor-tag {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 12px 5px 5px;
-  border-radius: 99px;
-  background: rgba(12, 30, 36, 0.85);
-  border: 1px solid rgba(120, 255, 210, 0.18);
-  color: #dffbf2;
+  gap: 9px;
+  padding: 5px 14px 5px 5px;
+  border-radius: 16px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 650;
+  font-size: 13.5px;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
+  transition: transform 0.18s ease;
+}
+.floor-tag:hover {
+  transform: translateX(-3px);
 }
 .floor-n {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 99px;
-  background: #3dffb0;
-  color: #06261b;
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
+  background: var(--c);
+  color: #fff;
   font-weight: 800;
+}
+.floor-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* listas */
+.row {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.row:hover {
+  box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.45);
+}
+.floor-group {
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+.floor-group.open {
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+.floor-group:not(.open) > div {
+  display: none;
+}
+
+/* chat */
+.bubble-bot {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px 18px 18px 18px;
+  padding: 9px 12px;
+}
+.bubble-me {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 18px 6px 18px 18px;
+  padding: 9px 12px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 99px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--accent);
+}
+.composer {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 4px 4px 4px 6px;
+}
+.composer:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.sendbtn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  flex-shrink: 0;
+}
+.sendbtn:disabled {
+  opacity: 0.35;
 }
 
 /* tarjetas del equipo */
@@ -254,7 +458,10 @@ button:disabled {
 }
 .fbox.wide {
   width: 250px;
-  height: 96px;
+  height: auto;
+  min-height: 96px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   justify-items: start;
   padding: 0 18px;
 }

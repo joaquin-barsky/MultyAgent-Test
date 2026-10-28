@@ -4,7 +4,8 @@ import {
 } from 'simple-icons'
 import {
   AlarmClock, Building2, Calculator, Captions, ChartLine, Check, Clapperboard, Filter, Globe, Image, Inbox,
-  Layers, List, Merge, Mic, Music2, Route, Search, Send, BellRing, UserRound, type LucideIcon,
+  Layers, List, Merge, Mic, Music2, Route, Search, Send, BellRing, UserRound, Split, BrainCircuit, Database, KeyRound,
+  FileText, PenLine, Wallet, Repeat, Phone, MapPin, ShieldCheck, type LucideIcon,
 } from 'lucide-react'
 import type { IconKey } from '../data/agents'
 
@@ -27,7 +28,8 @@ const LUCIDE: Partial<Record<IconKey, LucideIcon>> = {
   clock: AlarmClock, globe: Globe, building: Building2, mic: Mic, film: Clapperboard, image: Image,
   captions: Captions, music: Music2, search: Search, merge: Merge, filter: Filter, bell: BellRing,
   calc: Calculator, chart: ChartLine, user: UserRound, send: Send, list: List, layers: Layers,
-  inbox: Inbox, route: Route, check: Check,
+  inbox: Inbox, route: Route, check: Check, split: Split, brain: BrainCircuit, database: Database, key: KeyRound,
+  file: FileText, pen: PenLine, wallet: Wallet, repeat: Repeat, phone: Phone, map: MapPin, shield: ShieldCheck,
 }
 
 /** color de marca, o el del agente para íconos genéricos */
