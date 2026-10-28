@@ -205,6 +205,7 @@ function Floor({ f, style, light, focused, overview }: { f: (typeof FLOORS)[numb
 
 function SupervisorDesk({ clay, showTag, lamps }: { clay: boolean; showTag: boolean; lamps: number }) {
   const setChat = useCrew((s) => s.setChat)
+  const panelOpen = useCrew((s) => s.selected !== null)
   return (
     <group position={[2.6, 0, 0.1]}>
       <group scale={1.3}>
@@ -225,7 +226,7 @@ function SupervisorDesk({ clay, showTag, lamps }: { clay: boolean; showTag: bool
         <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} scale={0.62} clay={clay} />
       </group>
       </group>
-      {showTag && (
+      {showTag && !panelOpen && (
         <Html position={[0, 1.6, -0.2]} center zIndexRange={[9, 0]}>
           <button className="tag flex items-center gap-2 rounded-full py-1 pl-1 pr-3" onClick={() => setChat(true)}>
             <span className="size-7 overflow-hidden rounded-full" style={{ background: SUPERVISOR.soft }}>

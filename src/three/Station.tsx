@@ -24,6 +24,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, clay, show
   const run = useCrew((s) => s.runs[agent.id])
   const selected = useCrew((s) => s.selected === agent.id)
   const select = useCrew((s) => s.select)
+  const panelOpen = useCrew((s) => s.selected !== null)
   const [hover, setHover] = useState(false)
   const working = run.status === 'working'
   const body = useRef<THREE.Group>(null)
@@ -83,7 +84,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, clay, show
         {lamps > 0 && <pointLight position={[0.26, 0.75, 0]} color="#FFC98A" intensity={1.4 * lamps} distance={2.2} />}
         <pointLight position={[0, 0.7, 0.1]} color={agent.color} intensity={working && dark ? 1.8 : 0} distance={2.2} />
       </group>
-      {showTag && (
+      {showTag && !panelOpen && (
         <Html position={[0, 1.25, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'auto' }}>
           <AgentTag agent={agent} />
         </Html>
