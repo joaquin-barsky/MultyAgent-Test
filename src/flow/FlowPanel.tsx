@@ -5,7 +5,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, Clock3, Coins, Minus, Play, Plus, Repeat2, Scan, Timer, X, Zap } from 'lucide-react'
+import { Check, Clock3, Minus, Play, Plus, Repeat2, Scan, Timer, X, Zap } from 'lucide-react'
 import { AGENT_BY_ID, FLOORS, type Agent, type FlowStep, type Preview, type Sub } from '../data/agents'
 import { colSecs, stepStatus, useCrew, type AgentRun } from '../sim/store'
 import { NodeIcon, iconColor } from '../ui/icons'
@@ -20,7 +20,6 @@ type EdgeData = { color: string; status: St; items: number; label?: string; dash
 const COL = 250
 const LANE = 230
 const maxCol = (a: Agent) => Math.max(...a.steps.map((s) => s.col))
-const usd = (n: number) => `USD ${n.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`
 
 function PreviewCard({ p, color }: { p: Preview; color: string }) {
   switch (p.type) {
@@ -288,7 +287,7 @@ function ZoomButtons() {
   )
 }
 
-/** barra de abajo: ejecución actual, tiempos por etapa, costo e historial */
+/** barra de abajo: ejecución actual, tiempos por etapa e historial */
 function RunBar({ agent, run }: { agent: Agent; run: AgentRun }) {
   const cols = Array.from({ length: maxCol(agent) + 1 }, (_, i) => i)
   const total = cols.reduce((s, c) => s + colSecs(agent, c), 0)
@@ -322,7 +321,6 @@ function RunBar({ agent, run }: { agent: Agent; run: AgentRun }) {
       </div>
       <div className="flex items-center gap-4 text-[12px]">
         <span className="flex items-center gap-1.5"><Timer size={14} className="text-[var(--muted)]" />{total.toFixed(0)} s</span>
-        <span className="flex items-center gap-1.5"><Coins size={14} className="text-[var(--muted)]" />{usd(agent.cost)}</span>
       </div>
       <div className="hidden items-center gap-1 xl:flex">
         <Repeat2 size={14} className="mr-1 text-[var(--muted)]" />
@@ -475,11 +473,10 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
             </div>
           )}
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Stat label="Esta semana" value={`${run.runs} vueltas`} />
           <Stat label="Ahorra cada vez" value={`${agent.savedMinutes} min`} className="max-sm:hidden" />
-          <Stat label="Cuesta cada vez" value={usd(agent.cost)} className="max-sm:hidden" />
-          <button
+                    <button
             className="stat text-left"
             onClick={() => {
               if (!next) return

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { CameraControls, Html, Stars, AdaptiveDpr, RoundedBox } from '@react-three/drei'
+import { CameraControls, Html, Stars, AdaptiveDpr } from '@react-three/drei'
 import * as THREE from 'three'
 import { FLOORS, SUPERVISOR, agentsOn, type FloorId } from '../data/agents'
 import type { Light } from '../sim/daylight'
 import { useCrew } from '../sim/store'
 import { Character, Furn } from '../three/models'
 import { Packets, type Spots } from '../three/Packets'
+import { CityBlock } from './CityBlock'
 import { Station } from '../three/Station'
 
-export type BuildingStyle = 'maqueta' | 'vidrio'
+export type BuildingStyle = 'vidrio'
 
 const W = 10
 const D = 4.4
@@ -18,7 +19,6 @@ const BASE = 0.35
 const floorY = (n: number) => BASE + (n - 1) * H
 
 const PALETTE = {
-  maqueta: { slab: '#F3F0EB', edge: '#E0DAD1', floor: '#E6D3B6', wall: '#FBF9F6', trim: '#FFFFFF', col: '#F6F3EE', plaza: '#FFFFFF', street: '#EDE8E0' },
   vidrio: { slab: '#2A323C', edge: '#1D232B', floor: '#D9D4CB', wall: '#39434F', trim: '#1C222A', col: '#1C222A', plaza: '#E9EDF1', street: '#CBD2D9' },
 }
 
@@ -173,7 +173,7 @@ function Floor({ f, style, light, focused, overview }: { f: (typeof FLOORS)[numb
       </group>
 
       <Decor id={f.id} />
-      {f.id === 'direccion' && <SupervisorDesk clay={style === 'maqueta'} showTag={focused} lamps={light.lamps} />}
+      {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
         <Station
@@ -182,7 +182,6 @@ function Floor({ f, style, light, focused, overview }: { f: (typeof FLOORS)[numb
           position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]}
           lamps={light.lamps}
           dark={light.dark}
-          clay={style === 'maqueta'}
           showTag={focused}
           interactive={focused}
         />
@@ -203,7 +202,7 @@ function Floor({ f, style, light, focused, overview }: { f: (typeof FLOORS)[numb
   )
 }
 
-function SupervisorDesk({ clay, showTag, lamps }: { clay: boolean; showTag: boolean; lamps: number }) {
+function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number }) {
   const setChat = useCrew((s) => s.setChat)
   const panelOpen = useCrew((s) => s.selected !== null)
   return (
@@ -223,7 +222,7 @@ function SupervisorDesk({ clay, showTag, lamps }: { clay: boolean; showTag: bool
         <Furn name="computerScreen" position={[-0.08, 0.38, -0.04]} rotation-y={Math.PI} tint={{ metalDark: 'glow:#9BB8D8' }} />
         <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: '#1F2A37' }} />
-        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} scale={0.62} clay={clay} />
+        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} scale={0.62} />
       </group>
       </group>
       {showTag && !panelOpen && (
@@ -250,13 +249,6 @@ function Ground({ style }: { style: BuildingStyle }) {
       <mesh position={[0, BASE / 2 - 0.02, 0]} receiveShadow castShadow>
         <boxGeometry args={[W + 1.2, BASE, D + 1.2]} />
         <meshStandardMaterial color={pal.edge} roughness={0.9} />
-      </mesh>
-      <RoundedBox args={[W + 4, 0.3, D + 4.5]} radius={0.12} position={[0, -0.16, 0.5]} receiveShadow>
-        <meshStandardMaterial color={pal.plaza} roughness={0.9} />
-      </RoundedBox>
-      <mesh position={[0, 0.005, D / 2 + 1.7]} receiveShadow>
-        <boxGeometry args={[W + 3.4, 0.01, 1.1]} />
-        <meshStandardMaterial color={pal.street} roughness={1} />
       </mesh>
     </group>
   )
@@ -356,9 +348,10 @@ export default function BuildingScene({ style, light }: { style: BuildingStyle; 
   const floor = useCrew((s) => s.floor)
   const select = useCrew((s) => s.select)
   const setFloor = useCrew((s) => s.setFloor)
+  const selected = useCrew((s) => s.selected)
   const spots = useMemo(() => SPOTS, [])
   return (
-    <div className="scene-area absolute inset-0">
+    <div className="scene-area absolute inset-0" style={{ pointerEvents: selected ? 'none' : 'auto' }}>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -378,14 +371,15 @@ export default function BuildingScene({ style, light }: { style: BuildingStyle; 
           color={light.sun.color}
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-12}
-          shadow-camera-right={12}
-          shadow-camera-top={16}
-          shadow-camera-bottom={-4}
-          shadow-camera-far={60}
+          shadow-camera-left={-26}
+          shadow-camera-right={26}
+          shadow-camera-top={26}
+          shadow-camera-bottom={-20}
+          shadow-camera-far={90}
           shadow-bias={-0.0004}
         />
         <Ground style={style} />
+        <CityBlock dark={light.dark} ground={light.dark ? '#3A4450' : '#C9CFD6'} edge={light.dark ? '#222A33' : '#A9B1BA'} />
         {FLOORS.map((f) => (
           <Floor key={f.id} f={f} style={style} light={light} focused={floor === f.id} overview={!floor} />
         ))}

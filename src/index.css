@@ -583,6 +583,16 @@ button:disabled {
   background: var(--c);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 25%, transparent);
 }
+/* cursor fijo en el diagrama: flecha, manito al arrastrar */
+.react-flow__pane {
+  cursor: default !important;
+}
+.react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+.react-flow__node {
+  cursor: pointer !important;
+}
 .react-flow__attribution {
   display: none;
 }

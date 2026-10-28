@@ -8,19 +8,9 @@ import { useDaylight } from './sim/daylight'
 import { FlowPanel } from './flow/FlowPanel'
 import { SupervisorChat, SupervisorHeader } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
-import type { BuildingStyle } from './scenes/BuildingScene'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 
-const VARIANTS: { v: number; name: string; style: BuildingStyle }[] = [
-  { v: 1, name: 'Maqueta', style: 'maqueta' },
-  { v: 2, name: 'Vidrio', style: 'vidrio' },
-]
-
-function readV() {
-  const n = Number(new URLSearchParams(location.search).get('v'))
-  return VARIANTS.some((x) => x.v === n) ? n : 1
-}
 
 function useTicker() {
   const tick = useCrew((s) => s.tick)
@@ -37,10 +27,8 @@ function useTicker() {
 
 export default function App() {
   useTicker()
-  const [v, setV] = useState(readV)
   const narrow = useIsNarrow(1024)
   const { light, clock } = useDaylight()
-  const variant = VARIANTS.find((x) => x.v === v)!
 
   // links directos: ?piso=marketing&agente=lupa
   useEffect(() => {
@@ -56,20 +44,13 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light.dark ? '#0B1622' : '#DDEFFF')
   }, [light])
 
-  const pick = (n: number) => {
-    setV(n)
-    const u = new URL(location.href)
-    u.searchParams.set('v', String(n))
-    history.replaceState(null, '', u)
-  }
-
   return (
     <div className="relative h-dvh w-full overflow-hidden" style={{ background: light.sky }}>
       <Suspense fallback={null}>
-        <BuildingScene key={variant.style} style={variant.style} light={light} />
+        <BuildingScene style="vidrio" light={light} />
       </Suspense>
       <ModelProgress />
-      <TopBar v={v} onPick={pick} clock={clock} phase={light.label} />
+      <TopBar clock={clock} phase={light.label} />
       <FloorBar />
 
       {!narrow ? (
@@ -108,7 +89,7 @@ function ModelProgress() {
   )
 }
 
-function TopBar({ v, onPick, clock, phase }: { v: number; onPick: (n: number) => void; clock: string; phase: string }) {
+function TopBar({ clock, phase }: { clock: string; phase: string }) {
   const tasks = useCrew((s) => s.tasks)
   const minutes = useCrew((s) => s.minutes)
   const busy = useCrew((s) => Object.values(s.runs).filter((r) => r.status === 'working').length)
@@ -119,14 +100,6 @@ function TopBar({ v, onPick, clock, phase }: { v: number; onPick: (n: number) =>
         <Metric label="Horas ahorradas" value={Math.round(minutes / 60).toLocaleString('es-AR')} />
         <Metric label="Trabajando" value={`${busy} de ${AGENTS.length}`} className="hidden sm:flex" />
         <Metric label={phase} value={clock} className="hidden md:flex" />
-      </div>
-      <div className="glass pointer-events-auto flex gap-1 rounded-[18px] p-1" role="tablist" aria-label="Estilo del edificio">
-        {VARIANTS.map((x) => (
-          <button key={x.v} role="tab" aria-selected={v === x.v} onClick={() => onPick(x.v)} className="relative h-9 rounded-[14px] px-3 text-[13px] font-semibold sm:h-10 sm:px-4 sm:text-[14px]">
-            {v === x.v && <motion.span layoutId="sw" className="absolute inset-0 rounded-[14px] bg-[var(--ink)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-            <span className={`relative ${v === x.v ? 'text-[var(--bg)]' : ''}`}>{x.name}</span>
-          </button>
-        ))}
       </div>
     </header>
   )

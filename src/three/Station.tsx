@@ -3,7 +3,7 @@ import { Html } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Agent } from '../data/agents'
-import { currentStep, runProgress, useCrew } from '../sim/store'
+import { useCrew } from '../sim/store'
 import { Character, Furn } from './models'
 
 export interface StationProps {
@@ -12,7 +12,6 @@ export interface StationProps {
   rotation?: number
   lamps: number
   dark: boolean
-  clay: boolean
   showTag: boolean
   interactive: boolean
 }
@@ -20,7 +19,7 @@ export interface StationProps {
 const SEAT = new THREE.Vector3(0, 0.12, -0.5)
 const STAND = new THREE.Vector3(0.62, 0, -0.1)
 
-export function Station({ agent, position, rotation = 0, lamps, dark, clay, showTag, interactive }: StationProps) {
+export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive }: StationProps) {
   const run = useCrew((s) => s.runs[agent.id])
   const selected = useCrew((s) => s.selected === agent.id)
   const select = useCrew((s) => s.select)
@@ -47,6 +46,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, clay, show
     ? {
         onClick: (e: ThreeEvent<MouseEvent>) => {
           e.stopPropagation()
+          document.body.style.cursor = ''
           select(agent.id)
         },
         onPointerOver: (e: ThreeEvent<PointerEvent>) => {
@@ -79,13 +79,13 @@ export function Station({ agent, position, rotation = 0, lamps, dark, clay, show
         <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: agent.color }} />
         <group ref={body} position={STAND.toArray()}>
-          <Character model={agent.model} pose={working ? 'sit' : 'idle'} scale={0.62} clay={clay} accent={agent.color} />
+          <Character model={agent.model} pose={working ? 'sit' : 'idle'} scale={0.62} />
         </group>
         {lamps > 0 && <pointLight position={[0.26, 0.75, 0]} color="#FFC98A" intensity={1.4 * lamps} distance={2.2} />}
         <pointLight position={[0, 0.7, 0.1]} color={agent.color} intensity={working && dark ? 1.8 : 0} distance={2.2} />
       </group>
-      {showTag && !panelOpen && (
-        <Html position={[0, 1.25, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'auto' }}>
+      {showTag && hover && !panelOpen && (
+        <Html position={[0, 1.25, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
           <AgentTag agent={agent} />
         </Html>
       )}
@@ -93,24 +93,17 @@ export function Station({ agent, position, rotation = 0, lamps, dark, clay, show
   )
 }
 
+/** nombre al pasar el mouse; lo que está haciendo se ve al tocarlo */
 function AgentTag({ agent }: { agent: Agent }) {
-  const run = useCrew((s) => s.runs[agent.id])
-  const select = useCrew((s) => s.select)
-  const step = currentStep(agent, run)
-  const p = runProgress(agent, run)
   return (
-    <button onClick={() => select(agent.id)} className="tag flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-left whitespace-nowrap" style={{ ['--c' as string]: agent.color }}>
-      <span className="relative size-7 shrink-0 overflow-hidden rounded-full" style={{ background: agent.soft }}>
+    <div className="tag flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-left whitespace-nowrap">
+      <span className="size-7 shrink-0 overflow-hidden rounded-full" style={{ background: agent.soft }}>
         <img src={agent.avatar} alt="" className="size-full object-cover" />
-        {run.status === 'working' && <span className="tag-ping" />}
       </span>
       <span className="flex flex-col leading-tight">
         <span className="text-[13px] font-semibold">{agent.name}</span>
-        <span className="tag-sub text-[11px]">{step ? step.title : 'Libre'}</span>
-        <span className="mt-1 block h-[3px] w-24 overflow-hidden rounded-full bg-[var(--line)]">
-          <span className="block h-full rounded-full transition-[width] duration-200" style={{ width: `${p * 100}%`, background: agent.color }} />
-        </span>
+        <span className="tag-sub text-[11px]">{agent.role}</span>
       </span>
-    </button>
+    </div>
   )
 }
