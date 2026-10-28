@@ -487,8 +487,18 @@ button:disabled {
   border-color: transparent;
 }
 .fnode.running .fbox {
-  border-color: transparent;
+  border-color: var(--c);
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 18%, transparent), 0 14px 30px -12px var(--c);
+}
+.fnode.running .fbox::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
+  border: 2px solid var(--c);
+  opacity: 0;
+  animation: halo 1.6s ease-in-out infinite;
+  pointer-events: none;
 }
 .fnode.picked .fbox {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 35%, transparent), 0 14px 30px -12px var(--c);
@@ -629,6 +639,11 @@ button:disabled {
   }
 }
 
+@keyframes halo {
+  50% {
+    opacity: 0.55;
+  }
+}
 @keyframes fdot {
   from {
     stroke-dashoffset: 0;

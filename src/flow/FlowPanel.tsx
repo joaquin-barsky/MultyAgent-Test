@@ -71,7 +71,6 @@ const StepNode = memo(function StepNode({ data }: NodeProps<Node<StepData>>) {
     <div className={`fnode ${status} ${picked ? 'picked' : ''} ${wide ? 'wide' : ''}`} style={{ ['--c' as string]: agent.color, ['--soft' as string]: agent.soft }}>
       {step.kind !== 'trigger' && <Handle type="target" position={tgt} className="fhandle" />}
       <div className={`fbox ${step.kind} ${wide ? 'wide' : ''}`}>
-        {status === 'running' && <span className="fspin" />}
         <div className="fbox-in">
           {handoff ? (
             <span className="size-12 overflow-hidden rounded-full" style={{ background: handoff.soft }}>
@@ -156,11 +155,11 @@ function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
         style={{
           stroke: on ? d.color : 'var(--edge)',
           strokeWidth: d.dashed ? 1.6 : on ? 2.4 : 2,
-          strokeDasharray: d.dashed ? '4 5' : d.status === 'running' ? '6 6' : undefined,
-          animation: d.status === 'running' && !d.dashed ? 'dash 0.6s linear infinite' : undefined,
+          strokeDasharray: d.dashed ? '4 5' : undefined,
+          opacity: d.status === 'running' ? 0.55 : 1,
+          transition: 'stroke 0.3s, opacity 0.3s',
         }}
       />
-      {d.status === 'running' && !d.dashed && <path d={path} pathLength={100} fill="none" stroke={d.color} strokeWidth={10} strokeLinecap="round" className="fdot" />}
       {(d.label || (d.status === 'done' && !d.dashed)) && (
         <EdgeLabelRenderer>
           <div className={`fitems ${d.label ? 'cond' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)`, ['--c' as string]: d.color }}>
@@ -175,7 +174,9 @@ function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
 const nodeTypes = { step: StepNode, sub: SubNode, section: SectionNode }
 const edgeTypes = { flow: FlowEdge }
 
-function Graph({ agent, run, picked, onPick }: { agent: Agent; run: AgentRun; picked: string | null; onPick: (id: string | null) => void }) {
+const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; picked: string | null; onPick: (id: string | null) => void }) {
+  const key = useCrew((s) => { const r = s.runs[agent.id]; return `${r.status}|${r.col}|${r.runs}` })
+  const run = useMemo<AgentRun>(() => { const [status, col, runs] = key.split('|'); return { status: status as AgentRun['status'], col: Number(col), runs: Number(runs), t: 0, idleFor: 0 } }, [key])
   const vertical = useIsNarrow()
   const { fitView, setViewport } = useReactFlow()
   const lanes = Math.max(...agent.steps.map((s) => s.lane)) + 1
@@ -274,7 +275,7 @@ function Graph({ agent, run, picked, onPick }: { agent: Agent; run: AgentRun; pi
       <ZoomButtons />
     </ReactFlow>
   )
-}
+})
 
 function ZoomButtons() {
   const { zoomIn, zoomOut, fitView } = useReactFlow()
@@ -496,7 +497,7 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
       </header>
       <div className="relative flex-1 flow-bg">
         <ReactFlowProvider>
-          <Graph agent={agent} run={run} picked={picked} onPick={setPicked} />
+          <Graph agent={agent} picked={picked} onPick={setPicked} />
         </ReactFlowProvider>
         <AnimatePresence>{step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
       </div>

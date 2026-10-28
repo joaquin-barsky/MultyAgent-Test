@@ -79,10 +79,8 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: agent.color }} />
         <group ref={body} position={STAND.toArray()}>
-          <Character model={agent.model} pose={working ? 'sit' : 'idle'} scale={0.62} />
+          <Character model={agent.model} pose={working ? 'sit' : 'idle'} scale={0.62} animate={interactive} />
         </group>
-        {lamps > 0 && <pointLight position={[0.26, 0.75, 0]} color="#FFC98A" intensity={1.4 * lamps} distance={2.2} />}
-        <pointLight position={[0, 0.7, 0.1]} color={agent.color} intensity={working && dark ? 1.8 : 0} distance={2.2} />
       </group>
       {showTag && hover && !panelOpen && (
         <Html position={[0, 1.25, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>

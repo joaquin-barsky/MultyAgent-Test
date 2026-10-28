@@ -1,4 +1,5 @@
 // Equipo de agentes de la demo (una inmobiliaria). Datos simulados para mostrar el concepto.
+import { EXTRA_AGENTS } from './agents-extra'
 
 export type IconKey =
   | 'whatsapp' | 'instagram' | 'tiktok' | 'youtube' | 'claude' | 'sheets' | 'calendar'
@@ -168,7 +169,7 @@ export const AGENTS: Agent[] = [
     id: 'rolo', name: 'Rolo', role: 'Editor de video', floor: 'marketing', color: '#FFA400', soft: '#FFEFC9',
     model: 'character-male-b', avatar: '/avatars/face-character-male-b.png',
     mission: 'Arma reels de cada propiedad con plantilla, voz y subtítulos, y los manda a revisar.',
-    handoffTo: 'mora', handoffText: 'le entregó a Mora el reel para revisar',
+    handoffTo: 'sol', handoffText: 'le pasó a Sol el reel para revisar',
     savedMinutes: 120, runsWeek: 17, cost: 0.02,
     sections: [{ title: 'Guion', from: 0, to: 1 }, { title: 'Producción', from: 2, to: 4 }, { title: 'Revisión', from: 5, to: 6 }],
     steps: [
@@ -179,7 +180,7 @@ export const AGENTS: Agent[] = [
       { id: 'r5', kind: 'action', title: 'Montar el reel', subtitle: 'Plantilla de la marca', icon: 'film', col: 3, lane: 1, secs: 3, items: 1, what: 'Monta fotos, voz y música con la plantilla de la inmobiliaria.', output: ['Reel 9:16 de 20 s'], preview: { type: 'thumbs', imgs: [P(1), P(2), P(6)] } },
       { id: 'r6', kind: 'action', title: 'Subtítulos', subtitle: 'Automáticos', icon: 'captions', col: 4, lane: 1, secs: 1.6, items: 1, what: 'Agrega subtítulos grandes para ver sin sonido.', output: ['42 palabras'] },
       { id: 'r7', kind: 'if', title: '¿Pasa el control?', subtitle: 'Duración y marca', icon: 'shield', col: 5, lane: 1, secs: 0.8, items: 1, what: 'Revisa que dure menos de 30 s y que tenga el logo y el precio.', output: ['Sí: 20 s, logo y precio ok'] },
-      { id: 'r8', kind: 'handoff', title: 'Mandar a revisar', subtitle: 'A Mora', icon: 'send', col: 6, lane: 1, secs: 1, items: 1, what: 'Se lo pasa a Mora, que lo manda a una persona para aprobar.', output: ['Reel listo para revisar'] },
+      { id: 'r8', kind: 'handoff', title: 'Mandar a revisar', subtitle: 'A Sol', icon: 'send', col: 6, lane: 1, secs: 1, items: 1, what: 'Se lo pasa a Sol, que controla la calidad antes de publicar.', output: ['Reel listo para revisar'] },
     ],
     edges: [
       { from: 'r1', to: 'r2' }, { from: 'r2', to: 'r3' }, { from: 'r2', to: 'r4' }, { from: 'r3', to: 'r5' }, { from: 'r4', to: 'r5' },
@@ -246,7 +247,7 @@ export const AGENTS: Agent[] = [
     id: 'paz', name: 'Paz', role: 'Contratos y papeles', floor: 'administracion', color: '#B05CE6', soft: '#F3E3FC',
     model: 'character-female-f', avatar: '/avatars/face-character-female-f.png',
     mission: 'Prepara borradores de reservas y contratos y revisa que no falte ningún papel.',
-    handoffTo: 'nina', handoffText: 'le avisó a Nina que hay una seña para registrar',
+    handoffTo: 'gaby', handoffText: 'le avisó a Gaby que hay una seña para facturar',
     savedMinutes: 75, runsWeek: 9, cost: 0.025,
     sections: [{ title: 'Datos', from: 0, to: 1 }, { title: 'Redactar', from: 2, to: 3 }, { title: 'Entregar', from: 4, to: 5 }],
     steps: [
@@ -256,7 +257,7 @@ export const AGENTS: Agent[] = [
       { id: 'p4', kind: 'if', title: '¿Falta algún papel?', subtitle: 'Control', icon: 'shield', col: 3, lane: 1, secs: 0.8, items: 1, what: 'Revisa que estén todos los documentos antes de firmar.', output: ['Falta: informe de dominio'] },
       { id: 'p5', kind: 'action', title: 'Pedir lo que falta', subtitle: 'Gmail', icon: 'gmail', col: 4, lane: 2, secs: 1.2, items: 1, what: 'Pide por mail lo que falta.', output: ['Mail enviado al escribano'] },
       { id: 'p6', kind: 'action', title: 'Mandar a revisar', subtitle: 'A una persona', icon: 'user', col: 4, lane: 0, secs: 1.2, items: 1, what: 'El borrador siempre lo revisa una persona antes de firmar.', output: ['Enviado al martillero'] },
-      { id: 'p7', kind: 'handoff', title: 'Avisar a Nina', subtitle: 'Seña', icon: 'send', col: 5, lane: 1, secs: 1, items: 1, what: 'Le avisa a finanzas que va a entrar una seña.', output: ['Aviso entregado a Nina'] },
+      { id: 'p7', kind: 'handoff', title: 'Avisar a Gaby', subtitle: 'Seña', icon: 'send', col: 5, lane: 1, secs: 1, items: 1, what: 'Le avisa a facturación que va a entrar una seña.', output: ['Aviso entregado a Gaby'] },
     ],
     edges: [...chain(['p1', 'p2', 'p3', 'p4']), { from: 'p4', to: 'p5', label: 'sí' }, { from: 'p4', to: 'p6', label: 'no' }, { from: 'p5', to: 'p7' }, { from: 'p6', to: 'p7' }],
   },
@@ -297,6 +298,8 @@ export const AGENTS: Agent[] = [
     edges: [...chain(['t1', 't2', 't3', 't4']), { from: 't4', to: 't5', label: 'sí' }, { from: 't4', to: 't6', label: 'no' }, { from: 't5', to: 't6' }],
   },
 ]
+
+AGENTS.push(...EXTRA_AGENTS)
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<string, Agent>
 export const agentsOn = (f: FloorId) => AGENTS.filter((a) => a.floor === f)

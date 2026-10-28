@@ -47,7 +47,8 @@ export function Furn({ name, tint, ...props }: GroupProps & { name: string; tint
 export type Pose = 'sit' | 'idle' | 'walk' | 'emote-yes' | 'interact-right'
 
 /** Personaje animado de Kenney Mini Characters */
-export function Character({ model, pose, ...props }: GroupProps & { model: string; pose: Pose }) {
+/** animate=false deja al personaje quieto en su pose (los pisos que no estás mirando no se animan) */
+export function Character({ model, pose, animate = true, ...props }: GroupProps & { model: string; pose: Pose; animate?: boolean }) {
   const group = useRef<THREE.Group>(null)
   const { scene, animations } = useGLTF(`/models/chars/${model}.glb`)
   const clone = useMemo(() => {
@@ -61,16 +62,26 @@ export function Character({ model, pose, ...props }: GroupProps & { model: strin
     })
     return c
   }, [scene])
-  const { actions } = useAnimations(animations, group)
+  const { actions, mixer } = useAnimations(animations, group)
+
+  useEffect(() => {
+    mixer.timeScale = animate ? 1 : 0
+  }, [mixer, animate])
 
   useEffect(() => {
     const a = actions[pose]
     if (!a) return
+    if (!animate) {
+      // quieto: pasa a la pose de una, sin transición (con el tiempo frenado no terminaría nunca)
+      mixer.stopAllAction()
+      a.reset().play()
+      return
+    }
     a.reset().fadeIn(0.35).play()
     return () => {
       a.fadeOut(0.35)
     }
-  }, [pose, actions])
+  }, [pose, actions, animate, mixer])
 
   return (
     <group ref={group} {...props}>

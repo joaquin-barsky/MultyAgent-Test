@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProgress } from '@react-three/drei'
-import { ArrowLeft, ChevronRight, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, ChevronUp, X } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
@@ -30,6 +30,14 @@ export default function App() {
   useTicker()
   const narrow = useIsNarrow(1024)
   const { light, clock } = useDaylight()
+  const floor = useCrew((s) => s.floor)
+  const tint = FLOORS.find((f) => f.id === floor)?.tint
+  // al entrar a un piso cambia la ambientación: fondo con el color del área
+  const focusBg = tint
+    ? light.dark
+      ? `radial-gradient(120% 90% at 50% 15%, color-mix(in srgb, ${tint} 38%, #0B1622) 0%, #070D16 78%)`
+      : `radial-gradient(120% 90% at 50% 15%, color-mix(in srgb, ${tint} 20%, #FFFFFF) 0%, color-mix(in srgb, ${tint} 8%, #E6ECF2) 78%)`
+    : null
 
   // links directos: ?piso=marketing&agente=lupa
   useEffect(() => {
@@ -46,7 +54,7 @@ export default function App() {
   }, [light])
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden" style={{ background: light.sky }}>
+    <div className="stage relative h-dvh w-full overflow-hidden" style={{ background: focusBg ?? light.sky }}>
       <Suspense fallback={null}>
         <BuildingScene style="vidrio" light={light} />
       </Suspense>
@@ -135,6 +143,24 @@ function FloorBar() {
   const floor = useCrew((s) => s.floor)
   const setFloor = useCrew((s) => s.setFloor)
   const f = FLOORS.find((x) => x.id === floor)
+  const go = (dir: 1 | -1) => {
+    if (!f) return
+    const next = FLOORS.find((x) => x.n === f.n + dir)
+    if (next) setFloor(next.id)
+  }
+  // flechas del teclado para subir y bajar, Escape para volver al edificio
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (!useCrew.getState().floor || useCrew.getState().selected) return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'TEXTAREA' || tag === 'INPUT') return
+      if (e.key === 'ArrowUp') go(1)
+      if (e.key === 'ArrowDown') go(-1)
+      if (e.key === 'Escape') setFloor(null)
+    }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  })
   return (
     <AnimatePresence>
       {f && (
@@ -144,12 +170,20 @@ function FloorBar() {
           exit={{ opacity: 0, y: -10 }}
           className="pointer-events-none absolute inset-x-0 top-[70px] z-20 flex justify-center sm:top-[84px]"
         >
-          <div className="glass pointer-events-auto flex items-center gap-2 rounded-full p-1 pr-4">
+          <div className="glass pointer-events-auto flex items-center gap-2 rounded-full p-1">
             <button onClick={() => setFloor(null)} className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--ink)] px-3.5 text-[13.5px] font-semibold text-[var(--bg)]">
               <ArrowLeft size={15} /> Edificio
             </button>
             <span className="grid size-7 place-items-center rounded-full text-[12px] font-bold text-white" style={{ background: f.tint }}>{f.n}</span>
-            <span className="text-[14.5px] font-semibold">{f.name}</span>
+            <span className="min-w-[104px] text-[14.5px] font-semibold">{f.name}</span>
+            <span className="flex gap-1">
+              <button onClick={() => go(-1)} disabled={f.n === 1} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Bajar un piso">
+                <ChevronDown size={17} />
+              </button>
+              <button onClick={() => go(1)} disabled={f.n === FLOORS.length} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Subir un piso">
+                <ChevronUp size={17} />
+              </button>
+            </span>
           </div>
         </motion.div>
       )}
