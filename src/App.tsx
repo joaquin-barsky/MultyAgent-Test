@@ -5,11 +5,12 @@ import { ArrowLeft, ChevronRight, X } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
-import { FlowPanel } from './flow/FlowPanel'
 import { SupervisorChat, SupervisorHeader } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
+// el diagrama (React Flow) se baja recién cuando abrís un agente
+const FlowPanel = lazy(() => import('./flow/FlowPanel').then((m) => ({ default: m.FlowPanel })))
 
 
 function useTicker() {
@@ -66,9 +67,22 @@ export default function App() {
         <MobileDock />
       )}
 
-      <FlowPanel />
+      <LazyFlow />
     </div>
   )
+}
+
+function LazyFlow() {
+  const open = useCrew((s) => s.selected !== null)
+  const [wanted, setWanted] = useState(false)
+  useEffect(() => {
+    if (open) setWanted(true)
+  }, [open])
+  return wanted ? (
+    <Suspense fallback={null}>
+      <FlowPanel />
+    </Suspense>
+  ) : null
 }
 
 function ModelProgress() {

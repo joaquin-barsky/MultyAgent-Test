@@ -17,12 +17,15 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - La luz del edificio sigue la hora real de Buenos Aires (madrugada, amanecer, día, atardecer, noche). Para probar: `?hora=noche` (o madrugada, amanecer, dia, atardecer).
 - El chat responde de verdad con Claude Haiku 5.5 (el más barato), respuestas cortas (máx. 350 tokens), sin "pensamiento", límite de 25 preguntas cada 10 min por visitante. Sin clave, contesta en modo automático con datos de la simulación y lo avisa.
 - **Celular: por ahora no invertir tiempo en el diseño mobile** (pedido de Joaquín, 2026-10-28). Funciona, pero no se pule.
+- **Prioridad: que cargue rápido y se mueva fluido**, antes que el detalle del entorno. Si algo pesa o traba, se saca (prefiere fondo liso a algo trabado). Modelos comprimidos con meshopt; el diagrama se carga recién al abrir un agente.
+- **Solo se habla con Bruno**: el usuario no le habla a Lupa, Cata, etc. Bruno sabe lo que hacen todos y responde. Más adelante podría pasarles órdenes.
+- En la interfaz **no se muestran costos** (eran estimados, no reales).
+- En 3D no hay etiquetas fijas de qué hace cada agente: el nombre aparece al pasar el mouse y el detalle al tocarlo.
 
 ## Costos
 - Página: gratis (Vercel Hobby, 1 función usada de 12).
 - Chat de Bruno: cada pregunta gasta ~3.000 tokens de entrada y ~300 de salida con Haiku 5.5 → unos USD 0,0005. USD 5 de crédito alcanzan para ~10.000 preguntas.
-- La API se paga aparte del plan de Claude de USD 100/mes: el chat **no consume nada** de ese plan.
-- En la consola hay **USD 100 de crédito promocional** (dado el 28/10/2026, **vence el 16/11/2026**, una sola vez, no es mensual). Sirve para API, Batch, Agent SDK, Playground y Managed Agents. No hay tarjeta cargada ni crédito comprado. Límite de la organización: USD 500/mes (no tocado).
+- El plan Max de Joaquín trae **USD 100 por mes de crédito de API** vinculado a su organización (se acredita mes a mes, el próximo el 14/11/2026; cada crédito vence antes del siguiente). No consume el uso del plan en Claude Code. Sirve para API, Batch, Agent SDK, Playground y Managed Agents. No hay tarjeta cargada en la consola ni crédito comprado. Límite de la organización: USD 500/mes (no tocado).
 - Precios por millón de tokens (entrada/salida): Haiku 5.5 USD 0,10/0,50; Sonnet 5.5 USD 2/10; Opus 5.5 USD 4/20. Batch = 50% off.
 - Para venderlo a clientes hace falta API (la suscripción personal no sirve para dar servicio a terceros).
 
@@ -46,11 +49,13 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Circuito: Mora → Lupa → Cata → Rolo → Mora. Leo → Juli → Vale → Paz → Nina → Mora. Teo → Nina.
 
 ## Le gustó / no tocar
-- Le gustó la primera demo (oficina 3D + panel estilo n8n).
-- Pidió: menos "jueguito", sin marca, formato edificio con un piso por área, diagrama más marketinero y complejo, y supervisor con chat. Hecho el 2026-10-28; falta que lo vea y elija estilo (Maqueta o Vidrio).
+- Le gustó la primera demo (oficina 3D + panel estilo n8n) y cómo responde Bruno.
+- **Eligió el estilo Vidrio** (2026-10-28). Maqueta se sacó: no le gustaban los personajes blancos.
+- Pidió: menos jueguito, sin marca, edificio por pisos, diagrama más completo, supervisor con chat, entorno con calle y árboles. Hecho.
+- Todavía no está convencido del diseño general: se le propusieron otras direcciones (ver pendientes).
 
 ## Pendientes
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
-- Que Joaquín elija Maqueta o Vidrio y sacar el selector.
+- Probar otra dirección de diseño como variante aparte (propuesta: oficina pixel art estilo Pixel Agents, muy liviana) sin pisar la actual.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.
