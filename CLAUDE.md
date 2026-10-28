@@ -52,10 +52,10 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Le gustó la primera demo (oficina 3D + panel estilo n8n) y cómo responde Bruno.
 - **Eligió el estilo Vidrio** (2026-10-28). Maqueta se sacó: no le gustaban los personajes blancos.
 - Pidió: menos jueguito, sin marca, edificio por pisos, diagrama más completo, supervisor con chat, entorno con calle y árboles. Hecho.
-- Todavía no está convencido del diseño general: se le propusieron otras direcciones (ver pendientes).
+- Todavía no está convencido del diseño general. **Pixel art: NO** (lo vio y no le gustó, 2026-10-28).
 
 ## Pendientes
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
-- Probar otra dirección de diseño como variante aparte (propuesta: oficina pixel art estilo Pixel Agents, muy liviana) sin pisar la actual.
+- Definir con Joaquín otra dirección de diseño (pixel art: **descartado**, no le gustó). Esperar su referencia o captura.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.
