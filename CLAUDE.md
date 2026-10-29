@@ -16,7 +16,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Pisos (de arriba a abajo), 19 agentes + Bruno: 5 Dirección (Mora, Tomi, Sol + Bruno), 4 Marketing (Lupa, Cata, Rolo, Fran, Mica), 3 Finanzas (Nina, Teo, Gaby), 2 Administración (Juli, Paz, Lucas, Ana), 1 Ventas (Leo, Vale, Martín, Caro). Software NO va. Pisos profundos con dos filas de escritorios.
 - Al tocar un piso: se ve **solo ese piso, desde arriba**, con fondo del color del área; flechas (y teclas ↑ ↓) para cambiar de piso; "Edificio" o Escape para volver.
 - Para que no pese: solo se animan los personajes del piso que estás mirando; no hay luces por escritorio (una sola por piso).
-- **Vida en los pisos** (solo en el piso que estás mirando): cuando un agente le pasa trabajo a otro del mismo piso, se levanta y camina por el pasillo hasta su escritorio y vuelve. Cada tanto, los que están libres van a tomar un café (cada piso tiene su lugar de descanso).
+- **Vida en los pisos** (solo en el piso que estás mirando): cuando un agente le pasa trabajo a otro del mismo piso, se levanta y camina por el pasillo hasta su escritorio y vuelve. Cada tanto, los que están libres van a tomar un café: cada piso tiene **3 lugares de descanso y nunca hay dos personas en el mismo** (pedido de Joaquín). El pasillo entre filas tiene que quedar libre de muebles.
 - **Bruno presente**: cada ~1 minuto manda solo un aviso corto en el chat (novedades de la actividad o alertas). Se arman en el navegador, no usan la IA ni gastan crédito. Máximo 8 por visita, no interrumpe si estás escribiendo. Contador de sin leer en la pestaña y en el botón del celular.
 - **Entorno con ciudad (calle, autos, árboles, vecinos): descartado**, lo vio infantil. Queda el edificio solo sobre su base.
 - La luz del edificio sigue la hora real de Buenos Aires (madrugada, amanecer, día, atardecer, noche). Para probar: `?hora=noche` (o madrugada, amanecer, dia, atardecer).
@@ -66,4 +66,5 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
 - Definir con Joaquín otra dirección de diseño (pixel art: **descartado**, no le gustó). Esperar su referencia o captura.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.
+- Próximo paso que quiere Joaquín: **hacerlo real con un cliente puntual**. Candidatos: Calle Real (lo va a plantear con Alan) y un amigo que tiene una concesionaria (idea para más adelante).
 - Hacerlo real **más adelante**: Calle Real ya usa todos los días un sistema propio con mucha información (de ahí sacarían datos los agentes). Joaquín primero quiere entender bien cómo funciona y **tiene que hablarlo con el dueño** antes de avanzar.

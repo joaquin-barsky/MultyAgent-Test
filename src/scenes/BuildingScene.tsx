@@ -32,12 +32,18 @@ const LAYOUT: Record<string, [number, number]> = {
 
 /** pasillo entre las dos filas y lugar del café de cada piso */
 const AISLE_Z = 0.4
-const BREAK: Record<FloorId, [number, number]> = {
-  direccion: [-3.6, 1.6],
-  marketing: [-1.7, -3.2],
-  finanzas: [-3.4, 0.4],
-  administracion: [-3.4, 0.4],
-  ventas: [-3.9, -3.1],
+export interface BreakArea {
+  /** hacia dónde miran mientras descansan (la cafetera, el sillón...) */
+  focus: [number, number]
+  /** lugares para pararse; nunca hay dos personas en el mismo */
+  slots: [number, number][]
+}
+const BREAK: Record<FloorId, BreakArea> = {
+  direccion: { focus: [-4.3, 0.6], slots: [[-3.4, 1.4], [-3.4, -0.2], [-2.5, 2.6]] },
+  marketing: { focus: [0, -4.2], slots: [[-1.7, -3.1], [1.7, -3.1], [0, -3.3]] },
+  finanzas: { focus: [-4.2, 0.4], slots: [[-3.3, -0.3], [-3.3, 1.1], [0, -3.2]] },
+  administracion: { focus: [-4.3, 0.4], slots: [[-3.3, -0.3], [-3.3, 1.1], [0, -3.2]] },
+  ventas: { focus: [-4.4, -3.9], slots: [[-3.9, -2.9], [-2.7, -3.0], [-3.9, -1.8]] },
 }
 
 function buildSpots(): Spots {
@@ -102,7 +108,7 @@ function Decor({ id }: { id: FloorId }) {
           <Furn name="kitchenCoffeeMachine" position={[-4.4, 0.42, BZ - 0.02]} />
           <Furn name="stoolBar" position={[-4.2, 0, BZ + 0.8]} />
           <Furn name="pottedPlant" position={[4.5, 0, 3.6]} scale={1.4} />
-          <Furn name="loungeDesignChair" position={[0, 0, 0.5]} />
+          <Furn name="loungeDesignChair" position={[4.4, 0, 0.4]} rotation-y={-Math.PI / 2} />
         </>
       )
   }
@@ -198,7 +204,7 @@ function Floor({ f, light, focused, overview }: { f: (typeof FLOORS)[number]; li
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
-        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} spots={SPOTS} breakSpot={BREAK[f.id]} aisleZ={AISLE_Z} />
+        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} spots={SPOTS} breakArea={BREAK[f.id]} floorId={f.id} aisleZ={AISLE_Z} />
       ))}
 
       {overview && (

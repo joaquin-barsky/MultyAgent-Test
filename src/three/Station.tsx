@@ -16,8 +16,9 @@ export interface StationProps {
   interactive: boolean
   /** escritorios del piso (x, y, z) para poder ir caminando hasta otro */
   spots: Record<string, [number, number, number]>
-  /** lugar del piso donde van a tomar un café */
-  breakSpot: [number, number]
+  /** lugares del piso donde van a tomar un café */
+  breakArea: { focus: [number, number]; slots: [number, number][] }
+  floorId: string
   aisleZ: number
 }
 
@@ -25,6 +26,12 @@ const S = 1.3 // escala del puesto
 const SEAT = new THREE.Vector3(0, 0.12, -0.5)
 const STAND = new THREE.Vector3(0.62, 0, -0.1)
 const SPEED = 1.15 // unidades del piso por segundo
+
+// quién está parado en cada lugar de descanso (clave piso:lugar), para que no se amontonen
+const taken = new Map<string, string>()
+const release = (id: string) => {
+  for (const [k, v] of taken) if (v === id) taken.delete(k)
+}
 
 interface Walk {
   pts: THREE.Vector3[] // en coordenadas del puesto
@@ -54,7 +61,7 @@ function along(w: Walk, d: number, out: THREE.Vector3) {
   return Math.atan2(w.pts[i].x - w.pts[i - 1].x, w.pts[i].z - w.pts[i - 1].z)
 }
 
-export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, spots, breakSpot, aisleZ }: StationProps) {
+export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, spots, breakArea, floorId, aisleZ }: StationProps) {
   const run = useCrew((s) => s.runs[agent.id])
   const selected = useCrew((s) => s.selected === agent.id)
   const select = useCrew((s) => s.select)
@@ -87,8 +94,10 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
     if (!interactive) {
       walk.current = null
       setWalkPose(null)
+      release(agent.id)
     }
-  }, [interactive])
+    return () => release(agent.id)
+  }, [interactive, agent.id])
 
   useFrame(({ clock }, dt) => {
     const g = body.current
@@ -99,7 +108,14 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
     // de vez en cuando, si está libre, se va a tomar un café
     if (interactive && !walk.current && !working && now > nextBreak.current) {
       nextBreak.current = now + 30 + Math.random() * 45
-      walk.current = makeWalk([[me[0] + 0.8, aisleZ], [breakSpot[0] + 0.7, aisleZ], [breakSpot[0] + 0.7, breakSpot[1]]], me, 3.5, now, breakSpot)
+      // elige un lugar libre; si están todos ocupados, espera a la próxima
+      const free = breakArea.slots.map((_, i) => i).filter((i) => !taken.has(`${floorId}:${i}`))
+      if (free.length) {
+        const i = free[Math.floor(Math.random() * free.length)]
+        const [sx, sz] = breakArea.slots[i]
+        taken.set(`${floorId}:${i}`, agent.id)
+        walk.current = makeWalk([[me[0] + 0.8, aisleZ], [sx, aisleZ], [sx, sz]], me, 3.5, now, breakArea.focus)
+      }
     }
 
     const w = walk.current
@@ -120,6 +136,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         g.position.copy(tmp.current)
       } else {
         walk.current = null
+        release(agent.id)
       }
       if (walk.current && pose !== walkPose) setWalkPose(pose)
       if (!walk.current) setWalkPose(null)
