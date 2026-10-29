@@ -7,7 +7,7 @@ import { MAX_TOKENS, MODEL, SYSTEM } from './_bruno.js'
 // y Bruno contesta con el mismo modelo que el chat de la página.
 // Variables en Vercel: WHATSAPP_TOKEN, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN y, si está, WHATSAPP_APP_SECRET.
 
-const GRAPH = 'https://graph.facebook.com/v23.0'
+const GRAPH = 'https://graph.facebook.com/v25.0'
 const MAX_MESSAGES = 10
 const MAX_MESSAGE_CHARS = 600
 
