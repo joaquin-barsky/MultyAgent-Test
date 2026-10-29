@@ -26,6 +26,12 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - **Solo se habla con Bruno**: el usuario no le habla a Lupa, Cata, etc. Bruno sabe lo que hacen todos y responde. Más adelante podría pasarles órdenes.
 - En la interfaz **no se muestran costos** (eran estimados, no reales).
 - En 3D no hay etiquetas fijas de qué hace cada agente: el nombre aparece al pasar el mouse y el detalle al tocarlo.
+- **Bruno por WhatsApp** (2026-10-28): API oficial de Meta (Cloud API), sin QR ni número personal. Función `api/whatsapp.ts`, comparte personalidad con la web vía `api/_bruno.ts`. Desde WhatsApp no ve la simulación en vivo: usa los datos de la semana de `src/data/agents.ts`. Memoria corta y límite de 25 mensajes cada 10 min por número (en memoria de la función).
+  - App de Meta **Bruno Crew** (id 1684010846573731), portfolio JoaquinBarskys (no verificado), **publicada** (si no, Meta no manda los mensajes reales). Número de prueba **+1 555 650 0715** (Phone Number ID 1396846246846902). Hasta 5 destinatarios, editables en Caso de uso > Paso 1. Probar. Cargado: el celular de Joaquín.
+  - Números argentinos: WhatsApp los manda con 549…, para contestar se saca el 9 (lo hace la función). En la lista de destinatarios se cargan sin el 9.
+  - Variables en Vercel: `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN` (la misma va en Meta > Paso 2 > Webhooks), opcional `WHATSAPP_APP_SECRET`. `GET /api/whatsapp` muestra cuáles están cargadas.
+  - Página de privacidad para Meta: `public/privacidad.html` (contacto: Gmail de Joaquín).
+  - Política de Meta desde ene-2026: no permite asistentes de IA "para todo"; sí bots de una empresa sobre su negocio.
 
 ## Costos
 - Página: gratis (Vercel Hobby, 1 función usada de 12).
@@ -62,6 +68,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Todavía no está convencido del diseño general. **Pixel art: NO** (lo vio y no le gustó, 2026-10-28).
 
 ## Pendientes
+- WhatsApp: la clave de acceso de prueba dura 24 h. Cambiarla por una fija (usuario del sistema en el portfolio de Meta) y cargar `WHATSAPP_APP_SECRET` para validar que los mensajes vienen de Meta.
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
 - Definir con Joaquín otra dirección de diseño (pixel art: **descartado**, no le gustó). Esperar su referencia o captura.
