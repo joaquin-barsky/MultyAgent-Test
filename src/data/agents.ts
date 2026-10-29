@@ -1,5 +1,5 @@
 // Equipo de agentes de la demo (una inmobiliaria). Datos simulados para mostrar el concepto.
-import { EXTRA_AGENTS } from './agents-extra'
+import { EXTRA_AGENTS } from './agents-extra.js'
 
 export type IconKey =
   | 'whatsapp' | 'instagram' | 'tiktok' | 'youtube' | 'claude' | 'sheets' | 'calendar'
