@@ -1,22 +1,67 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { create } from 'zustand'
-import { ArrowUp, Sparkles } from 'lucide-react'
-import { SUPERVISOR } from '../data/agents'
+import { ArrowUp, BellRing, Sparkles } from 'lucide-react'
+import { AGENT_BY_ID, SUPERVISOR } from '../data/agents'
+import { useCrew } from '../sim/store'
 import { localAnswer, teamSnapshot } from './snapshot'
 
-type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean }
+type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean; notice?: boolean }
 
 const SUGGESTIONS = ['¿Qué pasó hoy?', '¿Hubo algún problema?', '¿Cómo viene Marketing?', '¿Quién está trabajando ahora?']
 
 let mid = 1
 
 // los mensajes viven fuera del componente para no perderlos al cerrar el chat en el celular
-const useChat = create<{ msgs: Msg[]; busy: boolean; set: (p: Partial<{ msgs: Msg[]; busy: boolean }>) => void }>((set) => ({
-  msgs: [{ id: mid++, role: 'assistant', content: 'Hola, soy Bruno. Veo todo lo que hace el equipo en los cinco pisos. Preguntame lo que quieras y te lo cuento.' }],
+type ChatState = { msgs: Msg[]; busy: boolean; unread: number; open: number; lastTyped: number }
+export const useChat = create<ChatState & { set: (p: Partial<ChatState>) => void }>((set) => ({
+  msgs: [{ id: mid++, role: 'assistant', content: 'Hola, soy Bruno. Veo todo lo que hace el equipo en los cinco pisos. Preguntame lo que quieras y te lo cuento. Si pasa algo importante, te aviso.' }],
   busy: false,
+  unread: 0,
+  open: 0,
+  lastTyped: 0,
   set: (p) => set(p),
 }))
+
+// avisos que Bruno manda solo; se arman acá, sin usar la IA (no gastan crédito)
+const ALERTS = [
+  'Ojo: **Teo** tiene 3 alquileres atrasados. Ya mandó el segundo aviso a los inquilinos.',
+  '**Paz** frenó una reserva porque falta el informe de dominio. Ya lo pidió al escribano.',
+  '**Nina** encontró una transferencia sin comprobante en la caja de hoy.',
+  'Dato: los reels que arma **Rolo** están trayendo el doble de consultas que los posteos.',
+  '**Fran** apagó dos anuncios que no funcionaban y dejó el que trae más consultas.',
+]
+const LEADS = ['Te cuento:', 'Novedad:', 'Para que sepas:']
+
+/** cada tanto Bruno cuenta algo que pasó, como un jefe que te pone al día */
+export function useBrunoNotices() {
+  useEffect(() => {
+    let sent = 0
+    let seenFeed = 0
+    const tick = () => {
+      const c = useChat.getState()
+      if (sent >= 8 || c.busy || Date.now() - c.lastTyped < 20000) return
+      const feed = useCrew.getState().feed
+      let text: string
+      if (sent % 2 === 1) {
+        text = ALERTS[Math.floor(sent / 2) % ALERTS.length]
+      } else {
+        const f = feed.find((x) => x.to && x.id > seenFeed)
+        if (!f) return
+        seenFeed = f.id
+        text = `${LEADS[sent % LEADS.length]} **${AGENT_BY_ID[f.from].name}** ${f.text}.`
+      }
+      sent++
+      c.set({ msgs: [...c.msgs, { id: mid++, role: 'assistant', content: text, notice: true }], unread: c.open > 0 ? 0 : c.unread + 1 })
+    }
+    const first = setTimeout(tick, 22000)
+    const id = setInterval(tick, 65000)
+    return () => {
+      clearTimeout(first)
+      clearInterval(id)
+    }
+  }, [])
+}
 
 /** **negrita** simple, sin librerías */
 function Rich({ text }: { text: string }) {
@@ -39,7 +84,14 @@ export function SupervisorChat() {
 
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight, behavior: 'smooth' })
+    useChat.getState().set({ unread: 0 })
   }, [msgs, busy])
+
+  // mientras el chat está a la vista, los avisos no cuentan como sin leer
+  useEffect(() => {
+    useChat.getState().set({ open: useChat.getState().open + 1, unread: 0 })
+    return () => useChat.getState().set({ open: useChat.getState().open - 1 })
+  }, [])
 
   async function send(q: string) {
     const content = q.trim()
@@ -84,8 +136,11 @@ export function SupervisorChat() {
               className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : ''}`}
             >
               {m.role === 'assistant' && <Face />}
-              <div className={`max-w-[84%] ${m.role === 'user' ? 'bubble-me' : 'bubble-bot'}`}>
-                <p className="text-[14px] leading-relaxed"><Rich text={m.content} /></p>
+              <div className={`max-w-[84%] ${m.role === 'user' ? 'bubble-me' : m.notice ? 'bubble-bot bubble-notice' : 'bubble-bot'}`}>
+                <p className="text-[14px] leading-relaxed">
+                  {m.notice && <BellRing size={13} className="mr-1.5 inline -translate-y-px text-[var(--accent)]" />}
+                  <Rich text={m.content} />
+                </p>
                 {m.local && <p className="mt-1.5 text-[11px] text-[var(--muted)]">Respuesta automática: la IA todavía no está conectada.</p>}
               </div>
             </motion.div>
@@ -123,7 +178,10 @@ export function SupervisorChat() {
       >
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value)
+            useChat.getState().set({ lastTyped: Date.now() })
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()

@@ -311,6 +311,10 @@ button:disabled {
   border-radius: 6px 18px 18px 18px;
   padding: 9px 12px;
 }
+.bubble-notice {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
 .bubble-me {
   background: var(--ink);
   color: var(--bg);

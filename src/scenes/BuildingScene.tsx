@@ -30,6 +30,16 @@ const LAYOUT: Record<string, [number, number]> = {
   leo: [-2.4, BACK], vale: [2.4, BACK], martin: [-2.4, FRONT], caro: [2.4, FRONT],
 }
 
+/** pasillo entre las dos filas y lugar del café de cada piso */
+const AISLE_Z = 0.4
+const BREAK: Record<FloorId, [number, number]> = {
+  direccion: [-3.6, 1.6],
+  marketing: [-1.7, -3.2],
+  finanzas: [-3.4, 0.4],
+  administracion: [-3.4, 0.4],
+  ventas: [-3.9, -3.1],
+}
+
 function buildSpots(): Spots {
   const s: Spots = {}
   for (const f of FLOORS) for (const a of agentsOn(f.id)) s[a.id] = [LAYOUT[a.id]?.[0] ?? 0, floorY(f.n), LAYOUT[a.id]?.[1] ?? 0]
@@ -188,7 +198,7 @@ function Floor({ f, light, focused, overview }: { f: (typeof FLOORS)[number]; li
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
-        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} />
+        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} spots={SPOTS} breakSpot={BREAK[f.id]} aisleZ={AISLE_Z} />
       ))}
 
       {overview && (

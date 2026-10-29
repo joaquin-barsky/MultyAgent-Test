@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, ChevronUp, X } from 'lucide-react
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
-import { SupervisorChat, SupervisorHeader } from './chat/SupervisorChat'
+import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
@@ -28,6 +28,7 @@ function useTicker() {
 
 export default function App() {
   useTicker()
+  useBrunoNotices()
   const narrow = useIsNarrow(1024)
   const { light, clock } = useDaylight()
   const floor = useCrew((s) => s.floor)
@@ -341,12 +342,13 @@ function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange
 
 function RightPanel() {
   const [tab, setTab] = useState<'bruno' | 'actividad'>('bruno')
+  const unread = useChat((s) => s.unread)
   return (
     <div className="glass pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 rounded-[26px] p-3">
       <div className="flex items-center justify-between px-1">
         <SupervisorHeader />
       </div>
-      <Tabs value={tab} onChange={setTab} items={[{ id: 'bruno', label: 'Preguntarle' }, { id: 'actividad', label: 'Actividad' }]} />
+      <Tabs value={tab} onChange={setTab} items={[{ id: 'bruno', label: unread ? `Preguntarle (${unread})` : 'Preguntarle' }, { id: 'actividad', label: 'Actividad' }]} />
       <div className="min-h-0 flex-1">
         {tab === 'bruno' ? <SupervisorChat /> : <div className="noscroll h-full overflow-y-auto"><FeedList /></div>}
       </div>
@@ -359,6 +361,7 @@ function MobileDock() {
   const floor = useCrew((s) => s.floor)
   const chat = useCrew((s) => s.chat)
   const setChat = useCrew((s) => s.setChat)
+  const unread = useChat((s) => s.unread)
   const list = floor ? agentsOn(floor) : AGENTS
   return (
     <>
@@ -368,7 +371,8 @@ function MobileDock() {
             <div className="flex-1">
               <Tabs value={tab} onChange={setTab} items={[{ id: 'pisos', label: floor ? 'Este piso' : 'Equipo' }, { id: 'actividad', label: 'Actividad' }]} />
             </div>
-            <button onClick={() => setChat(true)} className="flex h-11 items-center gap-2 rounded-[16px] bg-[var(--ink)] pl-1.5 pr-3 text-[13.5px] font-semibold text-[var(--bg)]">
+            <button onClick={() => setChat(true)} className="relative flex h-11 items-center gap-2 rounded-[16px] bg-[var(--ink)] pl-1.5 pr-3 text-[13.5px] font-semibold text-[var(--bg)]">
+              {unread > 0 && <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[var(--accent)] text-[11px] font-bold text-white">{unread}</span>}
               <img src="/avatars/face-character-male-e.png" alt="" className="size-8 rounded-[11px] bg-[#E4E9F0] object-cover" />
               Bruno
             </button>
