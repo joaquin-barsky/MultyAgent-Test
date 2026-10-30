@@ -10,6 +10,8 @@ import { Packets, type Spots } from '../three/Packets'
 import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { CurvedMonitor } from '../three/CurvedMonitor'
+import { cancelIntro, introFly, introPending } from './intro'
+import { StatusBoard } from '../three/StatusBoard'
 
 export type BuildingStyle = 'vidrio'
 
@@ -180,7 +182,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
             </mesh>
           )),
         )}
-        <pointLight position={[0, H - 0.3, 0.6]} color={light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.lamps > 0 ? 9 * light.lamps : 4.5} distance={10} decay={1.3} />
+        <pointLight position={[0, H - 0.3, 0.6]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 1 : light.lamps > 0 ? 9 * light.lamps : 4.5} distance={10} decay={1.3} />
       </group>
 
       {/* alfombras bajo cada fila de escritorios, con el color del área */}
@@ -193,7 +195,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
-        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} animate={focused || showcased} />
+        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} night={light.screens} showTag={focused} interactive={focused} animate={focused || showcased} />
       ))}
 
       {overview && !touring && (
@@ -239,8 +241,13 @@ export function SupervisorDesk({ showTag, lamps, walls = true }: { showTag: bool
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
       >
-        <Furn name="desk" scale={[1.5, 1, 1.15]} />
+        {/* escritorio del supervisor: madera oscura y el tablero con una luz por agente */}
+        <Furn name="desk" scale={[1.5, 1, 1.15]} tint={{ wood: '#7A5236' }} />
+        <StatusBoard />
         <CurvedMonitor glow="#9BB8D8" dark={false} />
+        <Furn name="plantSmall2" position={[-0.47, 0.384, 0.1]} scale={1.5} />
+        <Furn name="laptop" position={[0.42, 0.384, -0.05]} rotation-y={Math.PI + 0.35} scale={0.8} />
+        <Furn name="pottedPlant" position={[0.95, 0, -0.25]} scale={1.1} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: '#1F2A37' }} />
         <Character model={SUPERVISOR.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={showTag} />
       </group>
@@ -378,6 +385,9 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
       c.setLookAt(v[0], v[1], v[2], v[3], v[4], v[5], false)
       return
     }
+    if (!tour && !floor) {
+      if (introFly(c, p, t) || introPending()) return
+    } else cancelIntro()
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, !cut)
   }, [floor, showcase, shotKey, size.width, size.height, camera])
 

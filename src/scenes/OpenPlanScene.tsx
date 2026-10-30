@@ -10,6 +10,7 @@ import { Packets, type Spots } from '../three/Packets'
 import { Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { SupervisorDesk } from './BuildingScene'
+import { cancelIntro, introFly, introPending } from './intro'
 
 // Variante "planta libre": un solo piso grande, dividido en zonas por área.
 // Atrás: Dirección y Marketing contra la pared del fondo. Adelante: Finanzas, Administración y Ventas, con una pared baja detrás.
@@ -111,7 +112,7 @@ function ZoneArea({ z, light, focused, overview, touring }: { z: Zone; light: Li
       )}
 
       {agentsOn(z.id).map((a) => (
-        <Station key={a.id} agent={AGENT_BY_ID[a.id]} position={SPOTS[a.id]} lamps={light.lamps} dark={light.dark} showTag interactive animate />
+        <Station key={a.id} agent={AGENT_BY_ID[a.id]} position={SPOTS[a.id]} lamps={light.lamps} dark={light.dark} night={light.screens} showTag interactive animate />
       ))}
 
       {overview && !touring && (
@@ -240,6 +241,9 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     }
     const p = t.clone().add(new THREE.Vector3(Math.sin(polar) * Math.sin(az), Math.cos(polar), Math.sin(polar) * Math.cos(az)).multiplyScalar(dist))
     c.smoothTime = tour ? 1.8 : 0.6
+    if (!tour && !zone) {
+      if (introFly(c, p, t) || introPending()) return
+    } else cancelIntro()
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, true)
   }, [floor, showcase, shotKey, size.width, size.height, camera])
 
@@ -286,8 +290,8 @@ export default function OpenPlanScene({ light }: { light: Light }) {
           shadow-bias={-0.0004}
         />
         {/* luz de oficina */}
-        <pointLight position={[-6, 3.2, -3]} color={light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
-        <pointLight position={[6, 3.2, 3]} color={light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
+        <pointLight position={[-6, 3.2, -3]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 2.5 : light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
+        <pointLight position={[6, 3.2, 3]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 2.5 : light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
         <Shell light={light} />
         {ZONES.map((z) => (
           <ZoneArea key={z.id} z={z} light={light} focused={floor === z.id} overview={!floor} touring={!!showcase} />

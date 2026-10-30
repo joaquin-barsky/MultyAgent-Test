@@ -8,6 +8,24 @@
 }
 
 
+/* tablero de tareas */
+.tcard {
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 18px -16px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.tcard.cursor-pointer:hover {
+  border-color: color-mix(in srgb, var(--c) 45%, var(--line));
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tcard.need {
+  background: var(--need-soft);
+  border-color: color-mix(in srgb, var(--need) 55%, transparent);
+}
+
 /* memoria del agente */
 .mcore {
   display: flex;

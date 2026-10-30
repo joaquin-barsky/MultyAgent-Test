@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProgress } from '@react-three/drei'
-import { ArrowLeft, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, X, Moon, Sun } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
@@ -9,6 +9,7 @@ import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './ch
 import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
 import { DayReplay } from './ui/DayReplay'
+import { TaskBoard } from './ui/TaskBoard'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 const OpenPlanScene = lazy(() => import('./scenes/OpenPlanScene'))
@@ -38,7 +39,7 @@ function useShowcase() {
     window.addEventListener('wheel', move, { passive: true })
     const id = setInterval(() => {
       const s = useCrew.getState()
-      if (s.selected || s.chat) {
+      if (s.selected || s.chat || s.board) {
         last = Date.now()
         return
       }
@@ -91,7 +92,8 @@ export default function App() {
     u.searchParams.set('v', String(n))
     history.replaceState(null, '', u)
   }
-  const { light, clock } = useDaylight()
+  const night = useCrew((s) => s.night)
+  const { light, clock } = useDaylight(night)
   const floor = useCrew((s) => s.floor)
   const showcase = useCrew((s) => s.showcase)
   const tint = FLOORS.find((f) => f.id === floor)?.tint
@@ -127,6 +129,7 @@ export default function App() {
       <VariantSwitch v={v} onPick={pickV} />
       <ShowcasePanel />
       <DayReplay />
+      <TaskBoard />
 
       {!narrow ? (
         <>
@@ -194,6 +197,7 @@ function TopBar({ clock, phase }: { clock: string; phase: string }) {
         <Metric label="Trabajando" value={`${busy} de ${AGENTS.length}`} className="hidden sm:flex" />
         <Metric label={phase} value={clock} className="hidden md:flex" />
       </div>
+      <NightToggle />
       <AnimatePresence>
         {need.length > 0 && (
           <motion.button
@@ -215,6 +219,24 @@ function TopBar({ clock, phase }: { clock: string; phase: string }) {
   )
 }
 
+/** modo noche: la oficina a oscuras y el equipo trabajando igual */
+function NightToggle() {
+  const night = useCrew((s) => s.night)
+  const setNight = useCrew((s) => s.setNight)
+  return (
+    <button
+      onClick={() => setNight(!night)}
+      aria-pressed={night}
+      className={`glass pointer-events-auto flex h-[52px] items-center gap-2 rounded-[20px] pl-2.5 pr-4 text-[14px] font-semibold transition-colors ${night ? '!bg-[var(--ink)] text-[var(--bg)]' : ''}`}
+    >
+      <span className={`grid size-8 place-items-center rounded-[11px] ${night ? 'bg-[var(--bg)] text-[var(--ink)]' : 'bg-[var(--ink)] text-[var(--bg)]'}`}>
+        {night ? <Sun size={16} strokeWidth={2.2} /> : <Moon size={16} strokeWidth={2.2} />}
+      </span>
+      <span className="max-sm:hidden">{night ? 'Volver al día' : 'Modo noche'}</span>
+    </button>
+  )
+}
+
 function Metric({ label, value, className = '' }: { label: string; value: string; className?: string }) {
   return (
     <div className={`flex flex-col leading-tight ${className}`}>
@@ -228,12 +250,29 @@ function Metric({ label, value, className = '' }: { label: string; value: string
 
 /** aparece cuando estás dentro de un piso */
 function VariantSwitch({ v, onPick }: { v: 1 | 2; onPick: (n: 1 | 2) => void }) {
+  const board = useCrew((s) => s.board)
+  const setBoard = useCrew((s) => s.setBoard)
+  const cur = board ? 0 : v
   return (
     <div className="cine-hide glass pointer-events-auto absolute right-4 top-4 z-30 hidden gap-1 rounded-[16px] p-1 lg:flex" role="tablist" aria-label="Vista">
-      {([2, 1] as const).map((n) => (
-        <button key={n} role="tab" aria-selected={v === n} onClick={() => onPick(n)} className="relative h-9 rounded-[12px] px-3.5 text-[13.5px] font-semibold">
-          {v === n && <motion.span layoutId="vsw" className="absolute inset-0 rounded-[12px] bg-[var(--ink)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-          <span className={`relative ${v === n ? 'text-[var(--bg)]' : ''}`}>{n === 1 ? 'Edificio' : 'Planta libre'}</span>
+      {([2, 1, 0] as const).map((n) => (
+        <button
+          key={n}
+          role="tab"
+          aria-selected={cur === n}
+          onClick={() => {
+            if (n === 0) {
+              useCrew.getState().setFloor(null)
+              useCrew.getState().select(null)
+              return setBoard(true)
+            }
+            setBoard(false)
+            if (n !== v) onPick(n)
+          }}
+          className="relative h-9 rounded-[12px] px-3.5 text-[13.5px] font-semibold"
+        >
+          {cur === n && <motion.span layoutId="vsw" className="absolute inset-0 rounded-[12px] bg-[var(--ink)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+          <span className={`relative ${cur === n ? 'text-[var(--bg)]' : ''}`}>{n === 1 ? 'Edificio' : n === 2 ? 'Planta libre' : 'Tablero'}</span>
         </button>
       ))}
     </div>

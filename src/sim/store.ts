@@ -80,6 +80,12 @@ interface State {
   setShowcase: (id: string | null) => void
   chat: boolean
   setChat: (v: boolean) => void
+  /** tablero de tareas abierto */
+  board: boolean
+  /** modo noche: el equipo sigue trabajando con la oficina a oscuras */
+  night: boolean
+  setNight: (v: boolean) => void
+  setBoard: (v: boolean) => void
   setFloor: (f: FloorId | null) => void
   start: (id: string, note?: string) => void
   /** respuesta a un agente que te necesita */
@@ -115,6 +121,10 @@ export const useCrew = create<State>((set, get) => ({
   setShowcase: (id) => set((s) => ({ showcase: id, showcaseShot: id ? s.showcaseShot + 1 : s.showcaseShot })),
   chat: false,
   setChat: (v) => set({ chat: v }),
+  board: false,
+  night: typeof location !== 'undefined' && new URLSearchParams(location.search).has('noche'),
+  setNight: (v) => set({ night: v }),
+  setBoard: (v) => set({ board: v }),
   setFloor: (f) => set({ floor: f }),
 
   start: (id, note) => {
@@ -151,7 +161,9 @@ export const useCrew = create<State>((set, get) => ({
       const r = runs[a.id]
       if (r.status === 'idle') {
         runs[a.id] = { ...r, idleFor: r.idleFor + dt }
-        if (a.selfStart && r.idleFor + dt > a.selfStart && !queue.some((q) => q.id === a.id)) {
+        // de noche nadie queda libre mucho rato
+        const wake = s.night ? 3 + (a.id.charCodeAt(0) % 5) : a.selfStart
+        if (wake && r.idleFor + dt > wake && !queue.some((q) => q.id === a.id)) {
           queue = [...queue, { id: a.id, at: now }]
           feed = [{ id: seq++, at: Date.now(), from: a.id, text: a.selfStartText ?? 'arrancó solo' }, ...feed]
         }

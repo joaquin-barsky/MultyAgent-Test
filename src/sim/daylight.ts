@@ -12,6 +12,8 @@ export interface Light {
   hemi: [string, string, number]
   windows: string
   lamps: number
+  /** modo noche: oficina a oscuras, solo las pantallas prendidas */
+  screens?: boolean
 }
 
 export const LIGHTS: Record<Phase, Light> = {
@@ -62,8 +64,16 @@ export function arHour(d = new Date()) {
   return { h, m, text: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` }
 }
 
+/** modo noche: casi sin luz de ambiente, para que se vean las pantallas de los que siguen trabajando */
+export const NIGHT_MODE: Light = {
+  phase: 'noche', label: 'Noche', dark: true, screens: true,
+  sky: 'radial-gradient(120% 80% at 50% 10%, #13213A 0%, #070C18 60%, #03060C 100%)',
+  sun: { color: '#7C9CE8', intensity: 0.28, pos: [6, 12, 10] },
+  hemi: ['#4A64A0', '#0A0E18', 0.6], windows: '#13294A', lamps: 0,
+}
+
 /** ?hora=noche (o madrugada, amanecer, dia, atardecer) fuerza un momento para probar */
-export function useDaylight() {
+export function useDaylight(night = false) {
   const forced = new URLSearchParams(location.search).get('hora') as Phase | null
   const [now, setNow] = useState(() => arHour())
   useEffect(() => {
@@ -71,5 +81,5 @@ export function useDaylight() {
     return () => clearInterval(id)
   }, [])
   const phase = forced && LIGHTS[forced] ? forced : phaseOf(now.h + now.m / 60)
-  return { light: LIGHTS[phase], clock: now.text }
+  return { light: night ? NIGHT_MODE : LIGHTS[phase], clock: now.text }
 }

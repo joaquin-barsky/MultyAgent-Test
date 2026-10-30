@@ -21,6 +21,8 @@ export interface StationProps {
   interactive: boolean
   /** se anima (el piso que estás mirando o el que muestra el recorrido) */
   animate: boolean
+  /** modo noche: la pantalla ilumina el escritorio y el piso */
+  night?: boolean
 }
 
 const S = 1.3 // escala del puesto
@@ -93,7 +95,24 @@ function DeskProps({ agent }: { agent: Agent }) {
   )
 }
 
-export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, animate }: StationProps) {
+let glowTex: THREE.CanvasTexture | null = null
+/** mancha de luz redonda que se desvanece, dibujada una sola vez */
+function glowTexture() {
+  if (glowTex) return glowTex
+  const cv = document.createElement('canvas')
+  cv.width = cv.height = 128
+  const c = cv.getContext('2d')!
+  const g = c.createRadialGradient(64, 64, 0, 64, 64, 64)
+  g.addColorStop(0, 'rgba(255,255,255,0.9)')
+  g.addColorStop(0.45, 'rgba(255,255,255,0.35)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  c.fillStyle = g
+  c.fillRect(0, 0, 128, 128)
+  glowTex = new THREE.CanvasTexture(cv)
+  return glowTex
+}
+
+export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, animate, night }: StationProps) {
   const working = useCrew((s) => s.runs[agent.id].status === 'working')
   const waiting = useCrew((s) => s.runs[agent.id].status === 'waiting')
   const selected = useCrew((s) => s.selected === agent.id)
@@ -155,6 +174,19 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <DeskProps agent={agent} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: agent.color }} />
       </group>
+      {/* de noche, el resplandor de la pantalla sobre el escritorio y el piso (sin luces de verdad, para que no pese) */}
+      {night && (working || waiting) && (
+        <>
+          <mesh rotation-x={-Math.PI / 2} position={[0, 0.392, -0.05]}>
+            <planeGeometry args={[1.3, 0.75]} />
+            <meshBasicMaterial map={glowTexture()} color={waiting ? NEED : agent.color} transparent opacity={0.75} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+          </mesh>
+          <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.3]}>
+            <planeGeometry args={[2.6, 2.2]} />
+            <meshBasicMaterial map={glowTexture()} color={waiting ? NEED : agent.color} transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+          </mesh>
+        </>
+      )}
       {/* siempre sentado; cuando trabaja teclea */}
       <Character model={agent.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={animate} typing={working && animate} />
       {/* trabajando: anillo de progreso alrededor del puesto */}
