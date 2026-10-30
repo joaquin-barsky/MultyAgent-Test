@@ -44,7 +44,7 @@ function useShowcase() {
         return
       }
       const now = Date.now()
-      if (now - last < 8000 || (s.showcase && now < next)) return
+      if (now - last < 12000 || (s.showcase && now < next)) return
       // muestra un piso entero; si estás dentro de un piso, se queda en ese (cambia el ángulo)
       if (s.floor) {
         s.setShowcase(s.floor)

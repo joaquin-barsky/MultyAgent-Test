@@ -182,8 +182,8 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
             <meshBasicMaterial map={glowTexture()} color={waiting ? NEED : agent.color} transparent opacity={0.75} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
           </mesh>
           <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.3]}>
-            <planeGeometry args={[2.6, 2.2]} />
-            <meshBasicMaterial map={glowTexture()} color={waiting ? NEED : agent.color} transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+            <planeGeometry args={[3.4, 3]} />
+            <meshBasicMaterial map={glowTexture()} color={waiting ? NEED : agent.color} transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
           </mesh>
         </>
       )}

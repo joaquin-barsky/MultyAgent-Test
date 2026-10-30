@@ -8,7 +8,8 @@ import { useCrew } from '../sim/store'
 // Tablero en el frente del escritorio de Bruno: una luz por agente, ordenadas por área.
 // Del color del agente si trabaja, amarilla si te necesita, apagada si está libre.
 const ORDER = FLOORS.flatMap((f) => agentsOn(f.id))
-const GAP = 0.046
+const PER_ROW = Math.ceil(ORDER.length / 2)
+const GAP = 0.096
 const OFF = new THREE.Color('#3A4652')
 const NEED = new THREE.Color('#FFC21A')
 
@@ -26,15 +27,15 @@ export function StatusBoard() {
       else m.color.copy(st === 'working' ? colors.current[i] : OFF)
     })
   })
-  const w = ORDER.length * GAP + 0.05
+  const w = PER_ROW * GAP + 0.04
   return (
-    <group position={[0, 0.3, 0.232]}>
-      <RoundedBox args={[w, 0.075, 0.014]} radius={0.006}>
+    <group position={[0, 0.25, 0.232]}>
+      <RoundedBox args={[w, 0.2, 0.016]} radius={0.01}>
         <meshStandardMaterial color="#1F2A37" roughness={0.4} />
       </RoundedBox>
       {ORDER.map((a, i) => (
-        <mesh key={a.id} ref={(m) => { dots.current[i] = m }} position={[(i - (ORDER.length - 1) / 2) * GAP, 0, 0.0085]}>
-          <circleGeometry args={[0.014, 16]} />
+        <mesh key={a.id} ref={(m) => { dots.current[i] = m }} position={[((i % PER_ROW) - (PER_ROW - 1) / 2) * GAP, i < PER_ROW ? 0.045 : -0.045, 0.0095]}>
+          <circleGeometry args={[0.03, 20]} />
           <meshBasicMaterial color={OFF} toneMapped={false} />
         </mesh>
       ))}

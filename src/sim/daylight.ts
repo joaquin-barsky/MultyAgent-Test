@@ -68,8 +68,8 @@ export function arHour(d = new Date()) {
 export const NIGHT_MODE: Light = {
   phase: 'noche', label: 'Noche', dark: true, screens: true,
   sky: 'radial-gradient(120% 80% at 50% 10%, #13213A 0%, #070C18 60%, #03060C 100%)',
-  sun: { color: '#7C9CE8', intensity: 0.28, pos: [6, 12, 10] },
-  hemi: ['#4A64A0', '#0A0E18', 0.6], windows: '#13294A', lamps: 0,
+  sun: { color: '#8FB0FF', intensity: 0.6, pos: [2, 9, 14] },
+  hemi: ['#5A76B8', '#0C1220', 0.8], windows: '#13294A', lamps: 0,
 }
 
 /** ?hora=noche (o madrugada, amanecer, dia, atardecer) fuerza un momento para probar */

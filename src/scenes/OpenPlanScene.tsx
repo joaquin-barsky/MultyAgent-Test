@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { AdaptiveDpr, CameraControls, Html, RoundedBox } from '@react-three/drei'
+import { AdaptiveDpr, CameraControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { AGENT_BY_ID, FLOORS, agentsOn, type FloorId } from '../data/agents'
 import type { Light } from '../sim/daylight'
@@ -59,8 +59,6 @@ function tintMix(hex: string, k: number) {
 function ZoneArea({ z, light, focused, overview, touring }: { z: Zone; light: Light; focused: boolean; overview: boolean; touring: boolean }) {
   const f = FLOORS.find((x) => x.id === z.id)!
   const setFloor = useCrew((s) => s.setFloor)
-  const busy = useCrew((s) => agentsOn(z.id).filter((a) => s.runs[a.id].status === 'working').length)
-  const need = useCrew((s) => agentsOn(z.id).filter((a) => s.runs[a.id].status === 'waiting').length)
   const [hover, setHover] = useState(false)
   const c = center(z)
   const w = z.x1 - z.x0
@@ -115,21 +113,6 @@ function ZoneArea({ z, light, focused, overview, touring }: { z: Zone; light: Li
         <Station key={a.id} agent={AGENT_BY_ID[a.id]} position={SPOTS[a.id]} lamps={light.lamps} dark={light.dark} night={light.screens} showTag interactive animate />
       ))}
 
-      {overview && !touring && (
-        <Html position={z.wall === 'back' ? [z.x1 - 1.6, H + 0.45, BACK_Z + 0.2] : [z.x1 - 1.6, LOW + 0.45, MID_Z]} center zIndexRange={[9, 0]}>
-          <button className="floor-tag" style={{ ['--c' as string]: f.tint }} onClick={() => setFloor(z.id)}>
-            <span className="floor-n">{f.n}</span>
-            <span className="flex flex-col items-start leading-tight">
-              <span>{f.name}</span>
-              {need ? (
-                <span className="floor-sub need">{need === 1 ? '1 te necesita' : `${need} te necesitan`}</span>
-              ) : (
-                <span className="floor-sub">{busy ? `${busy} trabajando` : 'En pausa'}</span>
-              )}
-            </span>
-          </button>
-        </Html>
-      )}
     </group>
   )
 }

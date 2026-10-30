@@ -4,7 +4,7 @@ import { CircleCheck, Hand, Loader, X } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, type Agent } from '../data/agents'
 import { ASKS } from '../data/asks'
 import { currentStep, runProgress, useCrew } from '../sim/store'
-import { dayEvents, dayRange } from '../sim/replay'
+import { dayEvents, dayRange, type DayEvent } from '../sim/replay'
 import { AskCard } from './AskCard'
 
 const OPENED = Date.now()
@@ -159,23 +159,30 @@ function Waiting() {
   )
 }
 
+/** una tarjeta por agente: cuántas tareas terminó hoy y la última, en vez de cada paso suelto */
 function Done() {
   const feedKey = useCrew((s) => s.feed[0]?.id ?? 0)
-  const events = useMemo(() => dayEvents(dayRange(), useCrew.getState().feed, OPENED).reverse(), [feedKey])
+  const groups = useMemo(() => {
+    const by = new Map<string, { n: number; last: DayEvent }>()
+    for (const e of dayEvents(dayRange(), useCrew.getState().feed, OPENED)) {
+      const g = by.get(e.agent)
+      by.set(e.agent, { n: (g?.n ?? 0) + 1, last: e })
+    }
+    return [...by.entries()].map(([id, g]) => ({ a: AGENT_BY_ID[id], ...g })).sort((x, y) => y.last.at - x.last.at)
+  }, [feedKey])
+  const total = groups.reduce((n, g) => n + g.n, 0)
   const open = useOpen()
   return (
-    <Column title={dayRange().yesterday ? 'Hecho ayer' : 'Hecho hoy'} n={events.length} icon={<CircleCheck size={15} strokeWidth={2.6} />} tint="#3DAE2B">
-      {events.slice(0, 30).map((e) => {
-        const a = AGENT_BY_ID[e.agent]
-        return (
-          <Card key={e.id} a={a} onClick={() => open(a)}>
-            <div className="mt-2 flex items-start gap-2 text-[12.5px]">
-              <span className="shrink-0 tabular-nums text-[var(--muted)]">{hhmm(e.at)}</span>
-              <span className="leading-snug">{e.text[0].toUpperCase() + e.text.slice(1)}</span>
-            </div>
-          </Card>
-        )
-      })}
+    <Column title={dayRange().yesterday ? 'Hecho ayer' : 'Hecho hoy'} n={total} icon={<CircleCheck size={15} strokeWidth={2.6} />} tint="#3DAE2B">
+      {groups.map(({ a, n, last }) => (
+        <Card key={a.id} a={a} onClick={() => open(a)}>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="rounded-lg px-2 py-0.5 text-[12.5px] font-bold tabular-nums" style={{ background: a.soft, color: a.color }}>{n} {n === 1 ? 'tarea' : 'tareas'}</span>
+            <span className="text-[12px] tabular-nums text-[var(--muted)]">última {hhmm(last.at)}</span>
+          </div>
+          <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-snug">{last.text[0].toUpperCase() + last.text.slice(1)}</p>
+        </Card>
+      ))}
     </Column>
   )
 }

@@ -17,19 +17,21 @@ export function introFly(c: CameraControls, p: THREE.Vector3, t: THREE.Vector3) 
   const q = new URLSearchParams(location.search)
   if (q.get('piso') || q.get('agente') || q.get('cam')) return false
   const s = new THREE.Spherical().setFromVector3(p.clone().sub(t))
-  const far = new THREE.Vector3().setFromSpherical(new THREE.Spherical(Math.min(68, s.radius * 2.1), Math.max(0.37, s.phi - 0.55), s.theta - 0.75)).add(t)
+  const far = new THREE.Vector3().setFromSpherical(new THREE.Spherical(Math.min(68, s.radius * 2.4), Math.max(0.37, s.phi - 0.6), s.theta - 1.3)).add(t)
   c.setLookAt(far.x, far.y, far.z, t.x, t.y, t.z, false)
   live = true
   const t0 = performance.now()
   const go = () => {
     // espera a que se vea la oficina (como mucho 6 s), si no el vuelo pasa con la pantalla vacía
-    if (useProgress.getState().active && performance.now() - t0 < 6000) return void setTimeout(go, 120)
+    const pr = useProgress.getState()
+    const ready = !pr.active && pr.total > 0
+    if (!ready && performance.now() - t0 < 7000) return void setTimeout(go, 120)
     setTimeout(() => {
       if (!live) return
       live = false
-      c.smoothTime = 1.15
+      c.smoothTime = 2.1
       c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, true)
-    }, 250)
+    }, 450)
   }
   go()
   return true
