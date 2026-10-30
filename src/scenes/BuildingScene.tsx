@@ -20,14 +20,14 @@ const floorY = (n: number) => BASE + (n - 1) * H
 const PAL = { slab: '#2A323C', edge: '#1D232B', floor: '#D9D4CB', wall: '#39434F', trim: '#1C222A', col: '#1C222A', plaza: '#E9EDF1', street: '#CBD2D9' }
 
 // dos filas de escritorios por piso: atrás (z negativo) y adelante
-const BACK = -1.4
-const FRONT = 2.4
+const BACK = -1.0
+const FRONT = 1.9
 const LAYOUT: Record<string, [number, number]> = {
-  mora: [-3.2, BACK], tomi: [0, BACK], sol: [-3.2, FRONT],
-  lupa: [-3.4, BACK], cata: [0, BACK], rolo: [3.4, BACK], fran: [-1.8, FRONT], mica: [1.8, FRONT],
-  nina: [-2.4, BACK], teo: [2.4, BACK], gaby: [0, FRONT],
-  juli: [-2.4, BACK], paz: [2.4, BACK], lucas: [-2.4, FRONT], ana: [2.4, FRONT],
-  leo: [-2.4, BACK], vale: [2.4, BACK], martin: [-2.4, FRONT], caro: [2.4, FRONT],
+  mora: [-2.7, BACK], tomi: [-0.6, BACK], sol: [-1.65, FRONT],
+  lupa: [-2.6, BACK], cata: [0, BACK], rolo: [2.6, BACK], fran: [-1.3, FRONT], mica: [1.3, FRONT],
+  nina: [-1.4, BACK], teo: [1.4, BACK], gaby: [0, FRONT],
+  juli: [-1.4, BACK], paz: [1.4, BACK], lucas: [-1.4, FRONT], ana: [1.4, FRONT],
+  leo: [-1.4, BACK], vale: [1.4, BACK], martin: [-1.4, FRONT], caro: [1.4, FRONT],
 }
 
 function buildSpots(): Spots {
@@ -36,7 +36,6 @@ function buildSpots(): Spots {
   return s
 }
 const SPOTS = buildSpots()
-const AGENT_FLOOR: Record<string, FloorId> = Object.fromEntries(FLOORS.flatMap((f) => agentsOn(f.id).map((a) => [a.id, f.id])))
 
 const BZ = -D / 2 + 0.3 // pegado a la pared de atrás
 
@@ -183,7 +182,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
 
       {/* alfombras bajo cada fila de escritorios, con el color del área */}
       {[BACK, FRONT].map((z) => (
-        <Furn key={z} name="rugRounded" position={[f.id === 'direccion' ? -1.6 : 0, 0.012, z - 0.35]} scale={[f.id === 'direccion' ? 3.2 : 5.6, 1, 2.3]} tint={{ carpet: tintMix(f.tint, 0.22), carpetDarker: tintMix(f.tint, 0.36) }} />
+        <Furn key={z} name="rugRounded" position={[f.id === 'direccion' ? -1.6 : 0, 0.012, z - 0.3]} scale={[f.id === 'direccion' ? 3.4 : f.id === 'marketing' ? 5.4 : 3.8, 1, 2.1]} tint={{ carpet: tintMix(f.tint, 0.22), carpetDarker: tintMix(f.tint, 0.36) }} />
       ))}
       <Decor id={f.id} />
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
@@ -231,11 +230,11 @@ function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number })
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
       >
-        <Furn name="desk" />
-        <Furn name="computerScreen" position={[-0.08, 0.38, -0.04]} rotation-y={Math.PI} tint={{ metalDark: 'glow:#9BB8D8' }} />
-        <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
+        <Furn name="desk" scale={[1.5, 1, 1.15]} />
+        <Furn name="computerScreen" position={[-0.21, 0.38, 0.0]} rotation-y={Math.PI - 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
+        <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: '#1F2A37' }} />
-        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} rotation-y={Math.PI} scale={0.62} animate={showTag} />
+        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.17, -0.46]} scale={0.62} animate={showTag} />
       </group>
       {showTag && hover && !panelOpen && (
         <Html position={[0, 1.6, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
@@ -296,13 +295,15 @@ const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-W / 2 - 1.4, 0, -D / 2), 
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
 function insets(w: number) {
-  return w >= 1024 ? { l: 320, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
+  return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
+  const shotKey = useCrew((s) => s.showcaseShot)
   const ref = useRef<CameraControls>(null)
   const drift = useRef(0)
   const lastTourFloor = useRef<FloorId | null>(null)
+  const shot = useRef(0)
   const size = useThree((s) => s.size)
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
 
@@ -323,23 +324,23 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     let dist: number
     let az: number
     let polar: number
-    const spot = showcase ? SPOTS[showcase] : null
-    if (spot) {
-      // recorrido: cámara baja y cerca del trabajador, de costado para que no tape el monitor
-      t = new THREE.Vector3(spot[0], spot[1] + 0.6, spot[2] - 0.3)
-      // de costado y un poco desde arriba, para ver a la persona y su pantalla sin que la tape el monitor
-      // del lado derecho (el monitor queda del otro lado y no tapa la cara)
-      const side = Math.random() > 0.5 ? 1 : -1
-      dist = narrow ? 5.2 : 4.2
-      az = 0.85
-      polar = 1.15
+    const tour = showcase ? FLOORS.find((x) => x.id === showcase) : null
+    if (tour) {
+      // recorrido: el equipo del piso entero, de cerca y un poco de costado
+      shot.current += 1
+      const side = shot.current % 2 ? 1 : -1
+      t = new THREE.Vector3(0, floorY(tour.n) + 0.5, 0.45)
+      // de costado (del lado de las caras), alternando dos ángulos
+      dist = (narrow ? 2.9 : 2.3) / Math.sin(Math.atan(tanFree))
+      az = side > 0 ? 1.15 : 0.8
+      polar = side > 0 ? 1.05 : 1.12
       if (import.meta.env.DEV) {
         const q = new URLSearchParams(location.search)
         if (q.get('taz')) az = Number(q.get('taz'))
         if (q.get('tpol')) polar = Number(q.get('tpol'))
         if (q.get('tdist')) dist = Number(q.get('tdist'))
       }
-      drift.current = 0.035 * -side
+      drift.current = 0.03 * -side
     } else if (!floor) {
       const sp = BUILDING_BOX.getBoundingSphere(new THREE.Sphere())
       t = sp.center
@@ -356,14 +357,14 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
       polar = 0.62
     }
     const p = t.clone().add(new THREE.Vector3(Math.sin(polar) * Math.sin(az), Math.cos(polar), Math.sin(polar) * Math.cos(az)).multiplyScalar(dist))
-    c.smoothTime = spot ? 1.3 : 0.5
-    if (!spot) drift.current = 0
+    c.smoothTime = tour ? 1.3 : 0.5
+    if (!tour) drift.current = 0
     // al pasar a otro piso durante el recorrido, corte directo (si no, se ve el vacío entre pisos)
-    const tourFloor = showcase ? AGENT_FLOOR[showcase] : null
+    const tourFloor = (tour?.id ?? null) as FloorId | null
     const cut = !!tourFloor && !!lastTourFloor.current && tourFloor !== lastTourFloor.current
     lastTourFloor.current = tourFloor
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, !cut)
-  }, [floor, showcase, size.width, size.height, camera])
+  }, [floor, showcase, shotKey, size.width, size.height, camera])
 
   // mientras muestra a alguien, la cámara gira despacito alrededor
   useFrame((_, dt) => {
@@ -391,7 +392,7 @@ export default function BuildingScene({ light }: { style: BuildingStyle; light: 
   const select = useCrew((s) => s.select)
   const selected = useCrew((s) => s.selected)
   const showcase = useCrew((s) => s.showcase)
-  const showFloor = showcase ? AGENT_FLOOR[showcase] : null
+  const showFloor = showcase
   const spots = useMemo(() => SPOTS, [])
   return (
     <div className="scene-area absolute inset-0" style={{ pointerEvents: selected ? 'none' : 'auto' }}>

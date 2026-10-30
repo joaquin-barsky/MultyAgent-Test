@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProgress } from '@react-three/drei'
-import { ArrowLeft, ChevronDown, ChevronRight, ChevronUp, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
 import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
+import { ShowcasePanel } from './ui/ShowcasePanel'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 // el diagrama (React Flow) se baja recién cuando abrís un agente
@@ -18,7 +19,6 @@ function useShowcase() {
   useEffect(() => {
     let last = Date.now()
     let next = 0
-    let streak = 0
     const poke = () => {
       last = Date.now()
       if (useCrew.getState().showcase) useCrew.getState().setShowcase(null)
@@ -33,15 +33,16 @@ function useShowcase() {
       }
       const now = Date.now()
       if (now - last < 8000 || (s.showcase && now < next)) return
-      // varias tomas seguidas en el mismo piso y después cambia de piso
-      const cur = s.showcase ? AGENTS.find((x) => x.id === s.showcase)?.floor : null
-      const stay = !s.floor && cur && streak < 2
-      const pool = (s.floor ? agentsOn(s.floor) : stay ? agentsOn(cur) : AGENTS.filter((x) => x.floor !== cur)).filter((x) => x.id !== s.showcase)
-      streak = stay ? streak + 1 : 0
-      const busy = pool.filter((x) => s.runs[x.id].status === 'working')
-      const from = busy.length ? busy : pool
-      s.setShowcase(from[Math.floor(Math.random() * from.length)].id)
-      next = now + 6500
+      // muestra un piso entero; si estás dentro de un piso, se queda en ese (cambia el ángulo)
+      if (s.floor) {
+        s.setShowcase(s.floor)
+      } else {
+        const others = FLOORS.filter((f) => f.id !== s.showcase)
+        const busy = others.filter((f) => agentsOn(f.id).some((x) => s.runs[x.id].status === 'working'))
+        const from = busy.length ? busy : others
+        s.setShowcase(from[Math.floor(Math.random() * from.length)].id)
+      }
+      next = now + 12000
     }, 500)
     return () => {
       evs.forEach((e) => window.removeEventListener(e, poke))
@@ -101,12 +102,10 @@ export default function App() {
       <ModelProgress />
       <TopBar clock={clock} phase={light.label} />
       <FloorBar />
+      <ShowcasePanel />
 
       {!narrow ? (
         <>
-          <aside className="cine-hide pointer-events-none absolute bottom-4 left-4 top-[92px] z-10 flex w-[290px] flex-col">
-            <FloorList />
-          </aside>
           <aside className="cine-hide pointer-events-none absolute bottom-4 right-4 top-[92px] z-10 flex w-[350px] flex-col">
             <RightPanel />
           </aside>
@@ -266,42 +265,6 @@ function AgentRow({ agent, wide = true }: { agent: Agent; wide?: boolean }) {
         </span>
       </span>
     </motion.button>
-  )
-}
-
-function FloorList() {
-  const floor = useCrew((s) => s.floor)
-  const setFloor = useCrew((s) => s.setFloor)
-  return (
-    <div className="glass pointer-events-auto noscroll flex min-h-0 flex-col gap-1 overflow-y-auto rounded-[26px] p-2">
-      {FLOORS.map((f) => (
-        <FloorGroup key={f.id} f={f} open={floor === f.id} onOpen={() => setFloor(floor === f.id ? null : f.id)} />
-      ))}
-    </div>
-  )
-}
-
-function FloorGroup({ f, open, onOpen }: { f: (typeof FLOORS)[number]; open: boolean; onOpen: () => void }) {
-  const list = agentsOn(f.id)
-  const busy = useCrew((s) => list.filter((a) => s.runs[a.id].status === 'working').length)
-  return (
-    <div className={`floor-group ${open ? 'open' : ''}`} style={{ ['--c' as string]: f.tint }}>
-      <button onClick={onOpen} className="flex w-full items-center gap-2.5 rounded-[18px] p-2 text-left">
-        <span className="grid size-8 place-items-center rounded-xl text-[13px] font-bold text-white" style={{ background: f.tint }}>{f.n}</span>
-        <span className="flex flex-1 flex-col leading-tight">
-          <span className="text-[14.5px] font-semibold">{f.name}</span>
-          <span className="text-[11.5px] text-[var(--muted)]">{list.length + (f.id === 'direccion' ? 1 : 0)} en el piso, {busy} trabajando</span>
-        </span>
-        <ChevronRight size={16} className={`text-[var(--muted)] transition-transform ${open ? 'rotate-90' : ''}`} />
-      </button>
-      {open && (
-        <div className="flex flex-col gap-1 px-1 pb-1">
-          {list.map((a) => (
-            <AgentRow key={a.id} agent={a} />
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 

@@ -45,6 +45,8 @@ interface State {
   floor: FloorId | null
   /** agente que muestra la cámara de recorrido (cuando no tocás nada) */
   showcase: string | null
+  /** sube en cada toma nueva del recorrido, para que la cámara cambie de ángulo aunque sea el mismo piso */
+  showcaseShot: number
   setShowcase: (id: string | null) => void
   chat: boolean
   setChat: (v: boolean) => void
@@ -79,7 +81,8 @@ export const useCrew = create<State>((set, get) => ({
   select: (id) => set({ selected: id }),
   floor: null,
   showcase: null,
-  setShowcase: (id) => set({ showcase: id }),
+  showcaseShot: 0,
+  setShowcase: (id) => set((s) => ({ showcase: id, showcaseShot: id ? s.showcaseShot + 1 : s.showcaseShot })),
   chat: false,
   setChat: (v) => set({ chat: v }),
   setFloor: (f) => set({ floor: f }),

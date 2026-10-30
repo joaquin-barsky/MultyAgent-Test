@@ -20,7 +20,8 @@ export interface StationProps {
 }
 
 const S = 1.3 // escala del puesto
-const SEAT: [number, number, number] = [0, 0.12, -0.5]
+// el personaje mira hacia +z (hacia el escritorio); un poco más alto para que no se hunda en la silla
+const SEAT: [number, number, number] = [0, 0.17, -0.46]
 
 export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, animate }: StationProps) {
   const working = useCrew((s) => s.runs[agent.id].status === 'working')
@@ -76,16 +77,18 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <mesh position={[0, 0.6, -0.1]} visible={false}>
           <boxGeometry args={[1.6, 1.3, 1.6]} />
         </mesh>
-        <Furn name="desk" />
-        <Furn name="computerScreen" position={[-0.08, 0.38, -0.04]} rotation-y={Math.PI} tint={{ metalDark: screen }} />
-        <Furn name="computerKeyboard" position={[-0.08, 0.38, -0.2]} rotation-y={Math.PI} />
-        <Furn name="lampSquareTable" position={[-0.34, 0.38, 0.04]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
+        {/* escritorio más ancho con dos monitores */}
+        <Furn name="desk" scale={[1.5, 1, 1.15]} />
+        <Furn name="computerScreen" position={[-0.21, 0.38, 0.0]} rotation-y={Math.PI - 0.22} tint={{ metalDark: screen }} />
+        <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: screen }} />
+        <Furn name="computerKeyboard" position={[0, 0.38, -0.2]} rotation-y={Math.PI} />
+        <Furn name="computerMouse" position={[0.25, 0.38, -0.21]} rotation-y={Math.PI} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: agent.color }} />
       </group>
       {/* siempre sentado; cuando trabaja teclea */}
-      <Character model={agent.model} pose="sit" position={SEAT} rotation-y={Math.PI} scale={0.62} animate={animate} typing={working && animate} />
+      <Character model={agent.model} pose="sit" position={SEAT} scale={0.62} animate={animate} typing={working && animate} />
       {working && animate && (
-        <Billboard position={[0, 1.02, -0.45]}>
+        <Billboard position={[0, 1.08, -0.4]}>
           <mesh>
             <planeGeometry args={[0.62, 0.075]} />
             <meshBasicMaterial color="#0B1622" transparent opacity={0.55} toneMapped={false} />
