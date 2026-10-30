@@ -10,6 +10,7 @@ import { Packets, type Spots } from '../three/Packets'
 import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { CurvedMonitor } from '../three/CurvedMonitor'
+import { slots } from './slots'
 
 export type BuildingStyle = 'vidrio'
 
@@ -34,7 +35,14 @@ const LAYOUT: Record<string, [number, number]> = {
 
 function buildSpots(): Spots {
   const s: Spots = {}
-  for (const f of FLOORS) for (const a of agentsOn(f.id)) s[a.id] = [LAYOUT[a.id]?.[0] ?? 0, floorY(f.n), LAYOUT[a.id]?.[1] ?? 0]
+  for (const f of FLOORS) {
+    const list = agentsOn(f.id)
+    const gen = slots(list.length)
+    list.forEach((a, i) => {
+      const [x, z] = LAYOUT[a.id] ?? [gen[i][0], gen[i][1] ? FRONT : BACK]
+      s[a.id] = [x, floorY(f.n), z]
+    })
+  }
   return s
 }
 const SPOTS = buildSpots()

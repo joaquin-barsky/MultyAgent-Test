@@ -1,4 +1,5 @@
-import { AGENTS, FLOORS, AGENT_BY_ID } from '../data/agents'
+import { AGENTS, FLOORS, AGENT_BY_ID, COMPANY } from '../data/agents'
+import { ALERTS } from '../data/alerts'
 import { currentStep, useCrew } from '../sim/store'
 
 const hhmm = (t: number) => new Date(t).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
@@ -7,6 +8,7 @@ const hhmm = (t: number) => new Date(t).toLocaleTimeString('es-AR', { hour: '2-d
 export function teamSnapshot() {
   const s = useCrew.getState()
   const lines: string[] = []
+  lines.push(`Empresa: ${COMPANY}.`)
   lines.push(`Hora en Buenos Aires: ${hhmm(Date.now())}. Tareas hechas esta semana: ${s.tasks}. Horas ahorradas esta semana: ${Math.round(s.minutes / 60)}.`)
   for (const f of FLOORS) {
     lines.push(`\nPiso ${f.n}, ${f.name}:`)
@@ -18,6 +20,11 @@ export function teamSnapshot() {
         `- ${a.name} (${a.role}): ${r.status === 'waiting' ? `FRENADO esperando tu respuesta en "${step?.title}"` : step ? `trabajando ahora en "${step.title}"` : 'libre'}. ${r.runs} vueltas esta semana. Ahorra ${a.savedMinutes} min por vuelta. Le pasa el trabajo a ${a.handoffTo ? AGENT_BY_ID[a.handoffTo].name : 'nadie'}. Últimos resultados: ${last}.`,
       )
     }
+  }
+  const learned = Object.entries(s.learned).filter(([id, l]) => l.length && AGENT_BY_ID[id])
+  if (learned.length) {
+    lines.push('\nLo que los agentes aprendieron de las respuestas del dueño:')
+    for (const [id, l] of learned) for (const x of l.slice(0, 2)) lines.push(`- ${AGENT_BY_ID[id].name} preguntó "${x.q}" y el dueño respondió "${x.a}"${x.stop ? ' (frenó la tarea)' : ''}.`)
   }
   lines.push('\nÚltimos movimientos (más nuevo primero):')
   for (const f of s.feed.slice(0, 25)) {
@@ -43,7 +50,7 @@ export function localAnswer(q: string) {
       }).join(' ')
   }
   if (/problema|alerta|error|atras|falta/.test(t)) {
-    return 'Lo que hay que mirar: **Nina** encontró una transferencia sin comprobante y que la publicidad subió 18%. **Teo** tiene 3 alquileres atrasados y ya mandó el segundo aviso. **Paz** está esperando el informe de dominio para una reserva.'
+    return 'Lo que hay que mirar: ' + ALERTS.slice(0, 2).join(' ')
   }
   if (/ahora|trabajando|quién|quien/.test(t)) {
     return working.length

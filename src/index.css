@@ -8,6 +8,114 @@
 }
 
 
+/* memoria del agente */
+.mcore {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 240px;
+  padding: 12px 16px 12px 12px;
+  border-radius: 22px;
+  background: var(--card);
+  border: 2px solid var(--c);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--c) 12%, transparent), 0 20px 40px -18px var(--c);
+}
+.mcore-face {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: var(--soft);
+}
+.mcore-face img {
+  border-radius: 18px;
+}
+.mcore-brain {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--c);
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--card);
+}
+.mhub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 270px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 9%, var(--card));
+  border: 1.5px solid color-mix(in srgb, var(--c) 40%, var(--line));
+}
+.mhub-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--c);
+  color: #fff;
+}
+.mhub-n {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 99px;
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c);
+}
+.mleaf {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 246px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 22px -18px rgba(0, 0, 0, 0.45);
+}
+.mleaf-text {
+  font-size: 12.5px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mleaf.mine {
+  background: var(--need-soft);
+  border-color: color-mix(in srgb, var(--need) 55%, transparent);
+}
+.mleaf.fresh {
+  animation: mfresh 1.6s ease-out 2;
+}
+@keyframes mfresh {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--need) 70%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+.ptabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--flow);
+  border: 1px solid var(--line);
+}
+
 /* diagrama: piezas nuevas */
 .fprev {
   margin-top: 8px;

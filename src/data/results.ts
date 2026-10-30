@@ -1,3 +1,5 @@
+import { OTHER_RUBRO } from './rubros/index.js'
+
 // Lo último que produjo cada agente: el resultado concreto de su trabajo (datos simulados).
 const P = (n: number) => `/img/prop${n}.jpg`
 
@@ -9,7 +11,7 @@ export type Result =
   | { kind: 'doc'; title: string; lines: string[] }
   | { kind: 'stats'; title: string; items: { label: string; value: string }[] }
 
-export const RESULTS: Record<string, Result> = {
+const INMO_RESULTS: Record<string, Result> = {
   mora: { kind: 'doc', title: 'Plan del día', lines: ['Marketing: 3 publicaciones', 'Ventas: 2 consultas calientes', 'Finanzas: cierre de caja 19:00', 'Urgente: vence un contrato hoy'] },
   tomi: { kind: 'stats', title: 'Tablero de la semana', items: [{ label: 'Consultas', value: '+18%' }, { label: 'Visitas', value: '19' }, { label: 'Reservas', value: '2' }, { label: 'Seguidores', value: '+312' }] },
   sol: { kind: 'doc', title: 'Control del reel PH Villa Crespo', lines: ['Logo y colores de la marca', 'Precio igual a la ficha', 'Subtítulos legibles', 'Aprobado para publicar'] },
@@ -30,3 +32,5 @@ export const RESULTS: Record<string, Result> = {
   martin: { kind: 'stats', title: 'Tasación 3 amb. Colegiales', items: [{ label: 'Valor sugerido', value: 'USD 162k' }, { label: 'Rango', value: '158k a 167k' }, { label: 'Comparables', value: '12' }, { label: 'Por m²', value: 'USD 2.250' }] },
   caro: { kind: 'chat', with: 'Dueño que quiere vender', msgs: [{ me: false, text: 'Quiero vender mi 3 ambientes en Colegiales.' }, { me: true, text: 'Genial. Vendimos 4 parecidos este año en la zona. ¿Lo vamos a ver el martes a las 11?' }, { me: false, text: 'Dale.' }] },
 }
+
+export const RESULTS: Record<string, Result> = OTHER_RUBRO ? OTHER_RUBRO.results : INMO_RESULTS

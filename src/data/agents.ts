@@ -1,5 +1,6 @@
 // Equipo de agentes de la demo (una inmobiliaria). Datos simulados para mostrar el concepto.
 import { EXTRA_AGENTS } from './agents-extra.js'
+import { OTHER_RUBRO } from './rubros/index.js'
 
 export type IconKey =
   | 'whatsapp' | 'instagram' | 'tiktok' | 'youtube' | 'claude' | 'sheets' | 'calendar'
@@ -77,13 +78,19 @@ export interface Agent {
 
 export type FloorId = 'direccion' | 'marketing' | 'finanzas' | 'administracion' | 'ventas'
 
-export const FLOORS: { id: FloorId; name: string; n: number; tint: string }[] = [
+const INMO_FLOORS: { id: FloorId; name: string; n: number; tint: string }[] = [
   { id: 'direccion', name: 'Dirección', n: 5, tint: '#2E7DFF' },
   { id: 'marketing', name: 'Marketing', n: 4, tint: '#FF3D9A' },
   { id: 'finanzas', name: 'Finanzas', n: 3, tint: '#3DAE2B' },
   { id: 'administracion', name: 'Administración', n: 2, tint: '#8A5CF6' },
   { id: 'ventas', name: 'Ventas', n: 1, tint: '#00A991' },
 ]
+
+/** pisos del rubro elegido: los mismos cinco lugares, con el nombre de cada rubro */
+export const FLOORS = INMO_FLOORS.map((f) => ({ ...f, name: OTHER_RUBRO?.floorNames[f.id] ?? f.name }))
+
+/** cómo se le describe la empresa a Bruno */
+export const COMPANY = OTHER_RUBRO?.company ?? 'Inmobiliaria de Buenos Aires que vende y alquila propiedades'
 
 export const SUPERVISOR = {
   name: 'Bruno',
@@ -100,7 +107,7 @@ const HAIKU: Sub = { kind: 'model', label: 'Claude Haiku', icon: 'claude' }
 const SONNET: Sub = { kind: 'model', label: 'Claude Sonnet', icon: 'claude' }
 const MEM: Sub = { kind: 'memory', label: 'Memoria del equipo', icon: 'database' }
 
-export const AGENTS: Agent[] = [
+const INMO_AGENTS: Agent[] = [
   {
     id: 'mora', name: 'Mora', role: 'Coordinadora', floor: 'direccion', color: '#2E7DFF', soft: '#DCE9FF',
     model: 'character-female-c', avatar: '/avatars/face-character-female-c.png',
@@ -299,7 +306,9 @@ export const AGENTS: Agent[] = [
   },
 ]
 
-AGENTS.push(...EXTRA_AGENTS)
+INMO_AGENTS.push(...EXTRA_AGENTS)
+
+export const AGENTS: Agent[] = OTHER_RUBRO ? OTHER_RUBRO.agents : INMO_AGENTS
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<string, Agent>
 export const agentsOn = (f: FloorId) => AGENTS.filter((a) => a.floor === f)

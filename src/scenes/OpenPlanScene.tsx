@@ -10,6 +10,7 @@ import { Packets, type Spots } from '../three/Packets'
 import { Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { SupervisorDesk } from './BuildingScene'
+import { slots } from './slots'
 
 // Variante "planta libre": un solo piso grande, dividido en zonas por área.
 // Atrás: Dirección y Marketing contra la pared del fondo. Adelante: Finanzas, Administración y Ventas, con una pared baja detrás.
@@ -43,13 +44,31 @@ const ZONES: Zone[] = [
 const ZONE_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<FloorId, Zone>
 const center = (z: Zone) => new THREE.Vector3((z.x0 + z.x1) / 2, 0, (z.z0 + z.z1) / 2)
 
-const SPOTS: Spots = {
+const INMO_SPOTS: Spots = {
   mora: [-10.6, 0, -5.4], tomi: [-8.3, 0, -5.4], sol: [-9.45, 0, -2.6],
   lupa: [1.0, 0, -5.4], cata: [4.6, 0, -5.4], rolo: [8.2, 0, -5.4], fran: [2.8, 0, -2.6], mica: [6.4, 0, -2.6],
   nina: [-9.4, 0, 1.9], teo: [-6.6, 0, 1.9], gaby: [-8, 0, 4.7],
   juli: [-1.4, 0, 1.9], paz: [1.4, 0, 1.9], lucas: [-1.4, 0, 4.7], ana: [1.4, 0, 4.7],
   leo: [6.6, 0, 1.9], vale: [9.4, 0, 1.9], martin: [6.6, 0, 4.7], caro: [9.4, 0, 4.7],
 }
+
+// los rubros nuevos se acomodan solos dentro de cada zona
+function buildSpots(): Spots {
+  const s: Spots = {}
+  for (const z of ZONES) {
+    const list = agentsOn(z.id)
+    const gen = slots(list.length)
+    const cx = (z.x0 + z.x1) / 2
+    const rowZ = z.z0 + (z.wall === 'back' ? 2.1 : 2.9)
+    list.forEach((a, i) => {
+      // con pocos escritorios van en el medio de la zona, más separados
+      const few = list.length <= 2
+      s[a.id] = INMO_SPOTS[a.id] ?? [cx + gen[i][0] * (few ? 1.6 : z.wall === 'back' ? 1.3 : 1), 0, rowZ + (few ? 1.4 : gen[i][1] * 2.8)]
+    })
+  }
+  return s
+}
+const SPOTS = buildSpots()
 
 function tintMix(hex: string, k: number) {
   return '#' + new THREE.Color(PAL.floor).lerp(new THREE.Color(hex), k).getHexString()

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
 import { ASKS } from '../data/asks'
+import { RUBRO_ID } from '../data/rubros/index.js'
 
 /** waiting: frenó y te necesita; no sigue hasta que le contestes */
 export type Status = 'idle' | 'working' | 'waiting'
@@ -30,6 +31,31 @@ export interface FeedItem {
   text: string
 }
 
+/** lo que un agente aprendió de una respuesta tuya */
+export interface Learned {
+  at: number
+  q: string
+  a: string
+  stop?: boolean
+}
+
+// lo aprendido queda guardado en este navegador, para que el agente se acuerde la próxima vez
+const MEM_KEY = `crew-learned-${RUBRO_ID}`
+function loadLearned(): Record<string, Learned[]> {
+  try {
+    return JSON.parse(localStorage.getItem(MEM_KEY) ?? '{}') ?? {}
+  } catch {
+    return {}
+  }
+}
+function saveLearned(l: Record<string, Learned[]>) {
+  try {
+    localStorage.setItem(MEM_KEY, JSON.stringify(l))
+  } catch {
+    // sin almacenamiento: se recuerda solo durante la visita
+  }
+}
+
 export const PACKET_MS = 1800
 
 
@@ -41,6 +67,7 @@ interface State {
   runs: Record<string, AgentRun>
   packets: Packet[]
   feed: FeedItem[]
+  learned: Record<string, Learned[]>
   queue: { id: string; at: number }[]
   tasks: number
   minutes: number
@@ -67,20 +94,23 @@ const initialRuns = Object.fromEntries(
   AGENTS.map((a) => [a.id, { status: 'idle', col: 0, t: 0, runs: a.runsWeek, idleFor: 0 } as AgentRun]),
 )
 
+// quiénes arrancan apenas abrís la página
+function firstQueue() {
+  const now = performance.now()
+  if (AGENTS.some((a) => a.id === 'mora')) {
+    return ([['mora', 400], ['cata', 1400], ['leo', 2600], ['teo', 3800], ['paz', 5200], ['caro', 2000], ['lucas', 3200], ['mica', 4400]] as const).map(([id, ms]) => ({ id, at: now + ms }))
+  }
+  // en los otros rubros: uno por piso y los que suelen frenar a preguntarte
+  const ids = new Set([...AGENTS.filter((a, i, all) => all.findIndex((b) => b.floor === a.floor) === i).map((a) => a.id), ...Object.keys(ASKS)])
+  return [...ids].map((id, i) => ({ id, at: now + 400 + i * 1100 }))
+}
+
 export const useCrew = create<State>((set, get) => ({
   runs: initialRuns,
   packets: [],
   feed: [],
-  queue: [
-    { id: 'mora', at: performance.now() + 400 },
-    { id: 'cata', at: performance.now() + 1400 },
-    { id: 'leo', at: performance.now() + 2600 },
-    { id: 'teo', at: performance.now() + 3800 },
-    { id: 'paz', at: performance.now() + 5200 },
-    { id: 'caro', at: performance.now() + 2000 },
-    { id: 'lucas', at: performance.now() + 3200 },
-    { id: 'mica', at: performance.now() + 4400 },
-  ],
+  learned: loadLearned(),
+  queue: firstQueue(),
   tasks: 214,
   minutes: 3912,
   selected: null,
@@ -107,7 +137,10 @@ export const useCrew = create<State>((set, get) => ({
     if (!r || r.status !== 'waiting') return
     const next: AgentRun = stop ? { status: 'idle', col: 0, t: 0, runs: r.runs, idleFor: 0 } : { ...r, status: 'working', t: 0 }
     const msg = stop ? `frenó la tarea por tu respuesta: “${text}”` : `siguió con tu respuesta: “${text}”`
-    set({ runs: { ...get().runs, [id]: next }, feed: [{ id: seq++, at: Date.now(), from: id, text: msg }, ...get().feed].slice(0, 40) })
+    const ask = ASKS[id]
+    const learned = ask ? { ...get().learned, [id]: [{ at: Date.now(), q: ask.q, a: text, stop }, ...(get().learned[id] ?? [])].slice(0, 6) } : get().learned
+    if (ask) saveLearned(learned)
+    set({ runs: { ...get().runs, [id]: next }, learned, feed: [{ id: seq++, at: Date.now(), from: id, text: msg }, ...get().feed].slice(0, 40) })
   },
 
   tick: (dt) => {

@@ -7,6 +7,7 @@ import { useCrew } from '../sim/store'
 import { ASKS } from '../data/asks'
 import { AskCard } from '../ui/AskCard'
 import { localAnswer, teamSnapshot } from './snapshot'
+import { ALERTS } from '../data/alerts'
 
 type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean; notice?: boolean; ask?: string }
 
@@ -25,14 +26,6 @@ export const useChat = create<ChatState & { set: (p: Partial<ChatState>) => void
   set: (p) => set(p),
 }))
 
-// avisos que Bruno manda solo; se arman acá, sin usar la IA (no gastan crédito)
-const ALERTS = [
-  'Ojo: **Teo** tiene 3 alquileres atrasados. Ya mandó el segundo aviso a los inquilinos.',
-  '**Paz** frenó una reserva porque falta el informe de dominio. Ya lo pidió al escribano.',
-  '**Nina** encontró una transferencia sin comprobante en la caja de hoy.',
-  'Dato: los reels que arma **Rolo** están trayendo el doble de consultas que los posteos.',
-  '**Fran** apagó dos anuncios que no funcionaban y dejó el que trae más consultas.',
-]
 const LEADS = ['Te cuento:', 'Novedad:', 'Para que sepas:']
 
 /** cada tanto Bruno cuenta algo que pasó, como un jefe que te pone al día */

@@ -12,6 +12,7 @@ import { NodeIcon, iconColor } from '../ui/icons'
 import { useIsNarrow } from '../ui/useIsNarrow'
 import { AskCard } from '../ui/AskCard'
 import { ResultCard } from '../ui/ResultCard'
+import { MemoryGraph } from './MemoryGraph'
 
 type St = 'done' | 'running' | 'pending'
 type StepData = { step: FlowStep; agent: Agent; status: St; vertical: boolean; picked: boolean; waiting: boolean }
@@ -437,6 +438,8 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const select = useCrew((s) => s.select)
   const setFloor = useCrew((s) => s.setFloor)
   const [picked, setPicked] = useState<string | null>(null)
+  const [tab, setTab] = useState<'proceso' | 'memoria'>('proceso')
+  const learnedN = useCrew((s) => s.learned[agent.id]?.length ?? 0)
   const working = run.status === 'working'
   const next = agent.handoffTo ? AGENT_BY_ID[agent.handoffTo] : null
   const step = agent.steps.find((s) => s.id === picked) ?? null
@@ -472,6 +475,15 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
             </div>
             <p className="mt-1 truncate text-[13.5px] leading-snug max-lg:hidden">{agent.mission}</p>
           </div>
+          <div className="ptabs shrink-0" role="tablist" aria-label="Qué ver">
+            {(['proceso', 'memoria'] as const).map((t) => (
+              <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setPicked(null) }} className="relative flex h-9 items-center gap-1.5 rounded-[11px] px-3 text-[13.5px] font-semibold">
+                {tab === t && <motion.span layoutId={`ptab-${agent.id}`} className="absolute inset-0 rounded-[11px] bg-[var(--card)] shadow-[0_2px_8px_-3px_rgba(0,0,0,0.25)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                <span className="relative">{t === 'proceso' ? 'Proceso' : 'Memoria'}</span>
+                {t === 'memoria' && learnedN > 0 && <span className="relative grid size-5 place-items-center rounded-full bg-[var(--need)] text-[11px] font-bold text-[#3A2A00]">{learnedN}</span>}
+              </button>
+            ))}
+          </div>
           <RunBtn className="max-sm:hidden" />
           <button onClick={onClose} className="ibtn" aria-label="Cerrar"><X size={18} /></button>
         </div>
@@ -504,10 +516,16 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
       )}
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1 flow-bg">
-          <ReactFlowProvider>
-            <Graph agent={agent} picked={picked} onPick={setPicked} />
-          </ReactFlowProvider>
-          <AnimatePresence>{step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
+          {tab === 'proceso' ? (
+            <ReactFlowProvider key="proceso">
+              <Graph agent={agent} picked={picked} onPick={setPicked} />
+            </ReactFlowProvider>
+          ) : (
+            <ReactFlowProvider key="memoria">
+              <MemoryGraph agent={agent} />
+            </ReactFlowProvider>
+          )}
+          <AnimatePresence>{tab === 'proceso' && step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
         </div>
         {/* columna propia: ya no tapa el diagrama */}
         <aside className="noscroll hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-[var(--line)] p-4 lg:flex">
