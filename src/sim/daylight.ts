@@ -23,19 +23,19 @@ export const LIGHTS: Record<Phase, Light> = {
   },
   amanecer: {
     phase: 'amanecer', label: 'Amanecer', dark: false,
-    sky: 'linear-gradient(180deg, #8FB3E8 0%, #F6C1B1 55%, #FFD9A0 100%)',
+    sky: 'radial-gradient(85% 70% at 45% 40%, #FFF3E8 0%, #F3CBB8 40%, #A88CA9 76%, #6C6288 100%)',
     sun: { color: '#FFC08A', intensity: 1.6, pos: [-12, 5, 8] },
     hemi: ['#FFE3CF', '#8F7A90', 1], windows: '#FFD3A8', lamps: 0.35,
   },
   dia: {
     phase: 'dia', label: 'Día', dark: false,
-    sky: 'linear-gradient(180deg, #A9D6FF 0%, #DDF0FF 55%, #F4F8FB 100%)',
+    sky: 'radial-gradient(85% 70% at 45% 40%, #F6FAFD 0%, #CFDDEB 36%, #93ACC6 72%, #6A84A1 100%)',
     sun: { color: '#FFF6E8', intensity: 2.4, pos: [8, 16, 9] },
     hemi: ['#FFFFFF', '#C9D3DC', 1.15], windows: '#BFE3F5', lamps: 0,
   },
   atardecer: {
     phase: 'atardecer', label: 'Atardecer', dark: false,
-    sky: 'linear-gradient(180deg, #5B6FB8 0%, #E77C8C 45%, #FFB36B 78%, #FFD58A 100%)',
+    sky: 'radial-gradient(85% 70% at 45% 40%, #FFE4C6 0%, #F2A585 38%, #9C6283 72%, #4C3D66 100%)',
     sun: { color: '#FF9A5A', intensity: 1.9, pos: [14, 5, 6] },
     hemi: ['#FFD0B0', '#6A5470', 0.95], windows: '#FFB27A', lamps: 0.6,
   },

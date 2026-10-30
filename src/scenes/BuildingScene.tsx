@@ -8,7 +8,7 @@ import { useCrew } from '../sim/store'
 import { Character, Furn } from '../three/models'
 import { Packets, type Spots } from '../three/Packets'
 import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
-import { SIGN_VARIANT, WallSign, paintedWall } from '../three/WallSign'
+import { WallSign, paintedWall } from '../three/WallSign'
 import { CurvedMonitor } from '../three/CurvedMonitor'
 
 export type BuildingStyle = 'vidrio'
@@ -159,7 +159,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
         {/* pared lateral y vidrio del otro lado */}
         <mesh position={[-W / 2 + 0.06, H / 2, 0]} receiveShadow castShadow>
           <boxGeometry args={[0.12, H, D]} />
-          <meshStandardMaterial color={SIGN_VARIANT === 3 && (focused || showcased) ? paintedWall(f.tint) : PAL.wall} roughness={0.9} />
+          <meshStandardMaterial color={focused || showcased ? paintedWall(f.tint) : PAL.wall} roughness={0.9} />
         </mesh>
         <mesh position={[W / 2 - 0.02, H / 2, 0]}>
           <boxGeometry args={[0.04, H - 0.02, D]} />
@@ -189,7 +189,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
       ))}
       <Decor id={f.id} />
       {/* cartel del equipo en la pared lateral (se ve en el recorrido y al entrar al piso) */}
-      {(focused || showcased) && <WallSign name={f.name} color={f.tint} n={f.n} position={[-W / 2 + 0.135, SIGN_VARIANT === 3 ? 1.25 : 1.45, SIGN_VARIANT === 3 ? -1.2 : -1.6]} rotation-y={Math.PI / 2} />}
+      {(focused || showcased) && <WallSign name={f.name} width={5.4} position={[-W / 2 + 0.135, 1.25, -0.6]} rotation-y={Math.PI / 2} />}
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (

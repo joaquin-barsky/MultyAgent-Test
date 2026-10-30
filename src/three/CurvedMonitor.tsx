@@ -5,15 +5,21 @@ const R = 0.78 // radio de la curva
 const ARC = 0.95 // ángulo que abarca la pantalla
 const HEIGHT = 0.19
 
-export function CurvedMonitor({ glow, dark }: { glow: string | null; dark: boolean }) {
-  const screen = glow ?? (dark ? '#16222A' : '#2C3A42')
+/** content: lo que muestra la pantalla; glow: color liso (por ejemplo amarillo cuando te necesita) */
+export function CurvedMonitor({ content, glow, dark }: { content?: THREE.Texture | null; glow?: string | null; dark: boolean }) {
+  const on = !!content || !!glow
+  const base = glow ?? (dark ? '#16222A' : '#2C3A42')
   return (
     <group position={[0, 0.38, 0.02]}>
       {/* centro de la curva hacia la silla, así la pantalla es cóncava para quien la mira */}
       <group position={[0, 0.17, -R]}>
         <mesh>
           <cylinderGeometry args={[R, R, HEIGHT, 32, 1, true, -ARC / 2, ARC]} />
-          <meshStandardMaterial color={screen} emissive={glow ?? '#000000'} emissiveIntensity={glow ? 0.9 : 0} roughness={0.35} side={THREE.BackSide} />
+          {content && !glow ? (
+            <meshBasicMaterial map={content} toneMapped={false} side={THREE.BackSide} />
+          ) : (
+            <meshStandardMaterial color={base} emissive={glow ?? '#000000'} emissiveIntensity={on ? 0.9 : 0} roughness={0.35} side={THREE.BackSide} />
+          )}
         </mesh>
         <mesh>
           <cylinderGeometry args={[R + 0.012, R + 0.012, HEIGHT + 0.018, 32, 1, true, -ARC / 2 - 0.01, ARC + 0.02]} />
