@@ -10,7 +10,6 @@ import { Packets, type Spots } from '../three/Packets'
 import { Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { SupervisorDesk } from './BuildingScene'
-import { slots } from './slots'
 
 // Variante "planta libre": un solo piso grande, dividido en zonas por área.
 // Atrás: Dirección y Marketing contra la pared del fondo. Adelante: Finanzas, Administración y Ventas, con una pared baja detrás.
@@ -35,8 +34,8 @@ interface Zone {
 }
 
 const ZONES: Zone[] = [
-  { id: 'direccion', x0: -12, x1: -2, z0: BACK_Z, z1: MID_Z, wall: 'back' },
-  { id: 'marketing', x0: -2, x1: 12, z0: BACK_Z, z1: MID_Z, wall: 'back' },
+  { id: 'direccion', x0: -12, x1: -1, z0: BACK_Z, z1: MID_Z, wall: 'back' },
+  { id: 'marketing', x0: -1, x1: 12, z0: BACK_Z, z1: MID_Z, wall: 'back' },
   { id: 'finanzas', x0: -12, x1: -4, z0: MID_Z, z1: D / 2, wall: 'mid' },
   { id: 'administracion', x0: -4, x1: 4, z0: MID_Z, z1: D / 2, wall: 'mid' },
   { id: 'ventas', x0: 4, x1: 12, z0: MID_Z, z1: D / 2, wall: 'mid' },
@@ -44,31 +43,13 @@ const ZONES: Zone[] = [
 const ZONE_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<FloorId, Zone>
 const center = (z: Zone) => new THREE.Vector3((z.x0 + z.x1) / 2, 0, (z.z0 + z.z1) / 2)
 
-const INMO_SPOTS: Spots = {
-  mora: [-10.6, 0, -5.4], tomi: [-8.3, 0, -5.4], sol: [-9.45, 0, -2.6],
+const SPOTS: Spots = {
+  mora: [-10.1, 0, -5.2], tomi: [-3.3, 0, -5.2], sol: [-8.4, 0, -2.4],
   lupa: [1.0, 0, -5.4], cata: [4.6, 0, -5.4], rolo: [8.2, 0, -5.4], fran: [2.8, 0, -2.6], mica: [6.4, 0, -2.6],
   nina: [-9.4, 0, 1.9], teo: [-6.6, 0, 1.9], gaby: [-8, 0, 4.7],
   juli: [-1.4, 0, 1.9], paz: [1.4, 0, 1.9], lucas: [-1.4, 0, 4.7], ana: [1.4, 0, 4.7],
   leo: [6.6, 0, 1.9], vale: [9.4, 0, 1.9], martin: [6.6, 0, 4.7], caro: [9.4, 0, 4.7],
 }
-
-// los rubros nuevos se acomodan solos dentro de cada zona
-function buildSpots(): Spots {
-  const s: Spots = {}
-  for (const z of ZONES) {
-    const list = agentsOn(z.id)
-    const gen = slots(list.length)
-    const cx = (z.x0 + z.x1) / 2
-    const rowZ = z.z0 + (z.wall === 'back' ? 2.1 : 2.9)
-    list.forEach((a, i) => {
-      // con pocos escritorios van en el medio de la zona, más separados
-      const few = list.length <= 2
-      s[a.id] = INMO_SPOTS[a.id] ?? [cx + gen[i][0] * (few ? 1.6 : z.wall === 'back' ? 1.3 : 1), 0, rowZ + (few ? 1.4 : gen[i][1] * 2.8)]
-    })
-  }
-  return s
-}
-const SPOTS = buildSpots()
 
 function tintMix(hex: string, k: number) {
   return '#' + new THREE.Color(PAL.floor).lerp(new THREE.Color(hex), k).getHexString()
@@ -185,7 +166,6 @@ function Shell({ light }: { light: Light }) {
       ))}
       {/* separadores bajos de vidrio entre zonas */}
       {[
-        { x: -2, z0: BACK_Z, z1: MID_Z },
         { x: -4, z0: MID_Z, z1: D / 2 - 1.2 },
         { x: 4, z0: MID_Z, z1: D / 2 - 1.2 },
       ].map((g) => (
@@ -197,7 +177,7 @@ function Shell({ light }: { light: Light }) {
       {/* algo de vida: plantas, café y un living en Dirección */}
       <Furn name="pottedPlant" position={[-11.3, 0, 6.8]} scale={1.4} />
       <Furn name="pottedPlant" position={[11.3, 0, -6.8]} scale={1.4} />
-      <Furn name="pottedPlant" position={[-3.3, 0, -1.6]} scale={1.2} />
+      <Furn name="pottedPlant" position={[-1.7, 0, -1.6]} scale={1.2} />
       <Furn name="kitchenBar" position={[11.2, 0, 6.6]} rotation-y={-Math.PI / 2} />
       <Furn name="kitchenCoffeeMachine" position={[11.25, 0.42, 6.6]} rotation-y={-Math.PI / 2} />
       <Furn name="loungeDesignSofa" position={[-11.3, 0, -2.2]} rotation-y={Math.PI / 2} tint={{ carpet: '#2E7DFF' }} />
@@ -312,9 +292,9 @@ export default function OpenPlanScene({ light }: { light: Light }) {
         {ZONES.map((z) => (
           <ZoneArea key={z.id} z={z} light={light} focused={floor === z.id} overview={!floor} touring={!!showcase} />
         ))}
-        {/* oficina vidriada de Bruno, dentro de Dirección */}
-        <group position={[-7.4, 0, -5.2]}>
-          <SupervisorDesk showTag lamps={light.lamps} />
+        {/* Bruno al centro de Dirección, sin paredes */}
+        <group position={[-9.5, 0, -5.4]}>
+          <SupervisorDesk showTag lamps={light.lamps} walls={false} />
         </group>
         {!showcase && <Packets spots={SPOTS} lift={1.4} y={1.1} />}
         <CameraRig floor={floor} showcase={showcase} />

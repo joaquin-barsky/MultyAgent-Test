@@ -8,7 +8,6 @@ import { useDaylight } from './sim/daylight'
 import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
-import { RubroPicker } from './ui/RubroPicker'
 import { DayReplay } from './ui/DayReplay'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
@@ -195,7 +194,6 @@ function TopBar({ clock, phase }: { clock: string; phase: string }) {
         <Metric label="Trabajando" value={`${busy} de ${AGENTS.length}`} className="hidden sm:flex" />
         <Metric label={phase} value={clock} className="hidden md:flex" />
       </div>
-      <RubroPicker />
       <AnimatePresence>
         {need.length > 0 && (
           <motion.button

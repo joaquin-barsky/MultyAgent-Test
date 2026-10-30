@@ -10,7 +10,6 @@ import { Packets, type Spots } from '../three/Packets'
 import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { CurvedMonitor } from '../three/CurvedMonitor'
-import { slots } from './slots'
 
 export type BuildingStyle = 'vidrio'
 
@@ -35,14 +34,7 @@ const LAYOUT: Record<string, [number, number]> = {
 
 function buildSpots(): Spots {
   const s: Spots = {}
-  for (const f of FLOORS) {
-    const list = agentsOn(f.id)
-    const gen = slots(list.length)
-    list.forEach((a, i) => {
-      const [x, z] = LAYOUT[a.id] ?? [gen[i][0], gen[i][1] ? FRONT : BACK]
-      s[a.id] = [x, floorY(f.n), z]
-    })
-  }
+  for (const f of FLOORS) for (const a of agentsOn(f.id)) s[a.id] = [LAYOUT[a.id]?.[0] ?? 0, floorY(f.n), LAYOUT[a.id]?.[1] ?? 0]
   return s
 }
 const SPOTS = buildSpots()
@@ -219,13 +211,15 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
   )
 }
 
-export function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number }) {
+export function SupervisorDesk({ showTag, lamps, walls = true }: { showTag: boolean; lamps: number; walls?: boolean }) {
   const setChat = useCrew((s) => s.setChat)
   const panelOpen = useCrew((s) => s.selected !== null)
   const [hover, setHover] = useState(false)
   return (
     <group position={[2.8, 0, 0.2]}>
-      {/* oficina vidriada de Bruno */}
+      {/* oficina vidriada de Bruno (en planta libre va sin paredes) */}
+      {walls && (
+        <>
       <mesh position={[0, 1.2, 2.3]}>
         <boxGeometry args={[4.2, 2.4, 0.03]} />
         <meshPhysicalMaterial color="#CFE6F2" transparent opacity={0.2} roughness={0.05} />
@@ -234,6 +228,8 @@ export function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: nu
         <boxGeometry args={[0.03, 2.4, 4.6]} />
         <meshPhysicalMaterial color="#CFE6F2" transparent opacity={0.2} roughness={0.05} />
       </mesh>
+        </>
+      )}
       <group
         scale={1.3}
         onClick={(e) => {

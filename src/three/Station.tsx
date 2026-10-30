@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Billboard, Html } from '@react-three/drei'
+import { Billboard, Html, RoundedBox } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Agent } from '../data/agents'
@@ -65,6 +65,34 @@ function needTexture() {
   return needTex
 }
 
+// cosas sobre el escritorio: alfombrita del color del agente, taza y algo propio en las esquinas (cambia según el agente)
+const LEFT = ['plantSmall1', 'plantSmall2', 'books', 'plantSmall3']
+const RIGHT = ['books', null, 'plantSmall3', 'speakerSmall']
+const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+
+function DeskProps({ agent }: { agent: Agent }) {
+  const h = hash(agent.id)
+  const left = LEFT[h % LEFT.length]
+  const right = RIGHT[(h >> 3) % RIGHT.length]
+  return (
+    <group>
+      <RoundedBox args={[0.6, 0.008, 0.19]} radius={0.004} position={[0.05, 0.388, -0.18]} receiveShadow>
+        <meshStandardMaterial color={agent.color} roughness={0.85} />
+      </RoundedBox>
+      <mesh position={[0.43, 0.415, -0.13]} castShadow>
+        <cylinderGeometry args={[0.028, 0.025, 0.06, 16]} />
+        <meshStandardMaterial color="#F4F1EC" roughness={0.5} />
+      </mesh>
+      <mesh position={[0.43, 0.444, -0.13]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.024, 16]} />
+        <meshStandardMaterial color="#5A3A22" roughness={0.3} />
+      </mesh>
+      <Furn name={left} position={[-0.46, 0.384, 0.1]} rotation-y={left === 'books' ? 0.4 : 0} scale={left === 'books' ? 1.15 : 1.5} />
+      {right && right !== left && <Furn name={right} position={[0.47, 0.384, 0.12]} rotation-y={right === 'speakerSmall' ? Math.PI + 0.3 : -0.3} scale={right === 'speakerSmall' ? 0.6 : 1.15} />}
+    </group>
+  )
+}
+
 export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, animate }: StationProps) {
   const working = useCrew((s) => s.runs[agent.id].status === 'working')
   const waiting = useCrew((s) => s.runs[agent.id].status === 'waiting')
@@ -121,9 +149,10 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         </mesh>
         {/* escritorio más ancho con un monitor curvo largo */}
         <Furn name="desk" scale={[1.5, 1, 1.15]} />
-        <CurvedMonitor content={working ? screenTexture(agent.id, agent.color) : null} glow={waiting ? NEED : null} dark={dark} />
+        <CurvedMonitor content={working ? screenTexture(agent.id, agent.color) : null} glow={waiting ? NEED : null} dark={dark} accent={waiting ? NEED : working ? agent.color : null} />
         <Furn name="computerKeyboard" position={[0, 0.38, -0.2]} rotation-y={Math.PI} />
         <Furn name="computerMouse" position={[0.25, 0.38, -0.21]} rotation-y={Math.PI} />
+        <DeskProps agent={agent} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: agent.color }} />
       </group>
       {/* siempre sentado; cuando trabaja teclea */}

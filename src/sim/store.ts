@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
 import { ASKS } from '../data/asks'
-import { RUBRO_ID } from '../data/rubros/index.js'
 
 /** waiting: frenó y te necesita; no sigue hasta que le contestes */
 export type Status = 'idle' | 'working' | 'waiting'
@@ -40,7 +39,7 @@ export interface Learned {
 }
 
 // lo aprendido queda guardado en este navegador, para que el agente se acuerde la próxima vez
-const MEM_KEY = `crew-learned-${RUBRO_ID}`
+const MEM_KEY = 'crew-learned-inmobiliaria'
 function loadLearned(): Record<string, Learned[]> {
   try {
     return JSON.parse(localStorage.getItem(MEM_KEY) ?? '{}') ?? {}
@@ -97,12 +96,7 @@ const initialRuns = Object.fromEntries(
 // quiénes arrancan apenas abrís la página
 function firstQueue() {
   const now = performance.now()
-  if (AGENTS.some((a) => a.id === 'mora')) {
-    return ([['mora', 400], ['cata', 1400], ['leo', 2600], ['teo', 3800], ['paz', 5200], ['caro', 2000], ['lucas', 3200], ['mica', 4400]] as const).map(([id, ms]) => ({ id, at: now + ms }))
-  }
-  // en los otros rubros: uno por piso y los que suelen frenar a preguntarte
-  const ids = new Set([...AGENTS.filter((a, i, all) => all.findIndex((b) => b.floor === a.floor) === i).map((a) => a.id), ...Object.keys(ASKS)])
-  return [...ids].map((id, i) => ({ id, at: now + 400 + i * 1100 }))
+  return ([['mora', 400], ['cata', 1400], ['leo', 2600], ['teo', 3800], ['paz', 5200], ['caro', 2000], ['lucas', 3200], ['mica', 4400]] as const).map(([id, ms]) => ({ id, at: now + ms }))
 }
 
 export const useCrew = create<State>((set, get) => ({
