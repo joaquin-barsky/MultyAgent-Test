@@ -8,7 +8,6 @@ import { useDaylight } from './sim/daylight'
 import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
-import { BigCounter } from './ui/BigCounter'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 // el diagrama (React Flow) se baja recién cuando abrís un agente
@@ -112,7 +111,6 @@ export default function App() {
       <TopBar clock={clock} phase={light.label} />
       <FloorBar />
       <ShowcasePanel />
-      <BigCounter />
 
       {!narrow ? (
         <>

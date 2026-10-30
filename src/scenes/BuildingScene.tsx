@@ -8,7 +8,8 @@ import { useCrew } from '../sim/store'
 import { Character, Furn } from '../three/models'
 import { Packets, type Spots } from '../three/Packets'
 import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
-import { WallSign } from '../three/WallSign'
+import { SIGN_VARIANT, WallSign, paintedWall } from '../three/WallSign'
+import { CurvedMonitor } from '../three/CurvedMonitor'
 
 export type BuildingStyle = 'vidrio'
 
@@ -158,7 +159,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
         {/* pared lateral y vidrio del otro lado */}
         <mesh position={[-W / 2 + 0.06, H / 2, 0]} receiveShadow castShadow>
           <boxGeometry args={[0.12, H, D]} />
-          <meshStandardMaterial color={PAL.wall} roughness={0.9} />
+          <meshStandardMaterial color={SIGN_VARIANT === 3 && (focused || showcased) ? paintedWall(f.tint) : PAL.wall} roughness={0.9} />
         </mesh>
         <mesh position={[W / 2 - 0.02, H / 2, 0]}>
           <boxGeometry args={[0.04, H - 0.02, D]} />
@@ -188,7 +189,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
       ))}
       <Decor id={f.id} />
       {/* cartel del equipo en la pared lateral (se ve en el recorrido y al entrar al piso) */}
-      {(focused || showcased) && <WallSign name={f.name} color={f.tint} width={4.3} position={[-W / 2 + 0.135, 1.5, -1.5]} rotation-y={Math.PI / 2} />}
+      {(focused || showcased) && <WallSign name={f.name} color={f.tint} n={f.n} position={[-W / 2 + 0.135, SIGN_VARIANT === 3 ? 1.25 : 1.45, SIGN_VARIANT === 3 ? -1.2 : -1.6]} rotation-y={Math.PI / 2} />}
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
@@ -235,8 +236,7 @@ function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number })
         onPointerOut={() => setHover(false)}
       >
         <Furn name="desk" scale={[1.5, 1, 1.15]} />
-        <Furn name="computerScreen" position={[-0.21, 0.38, 0.0]} rotation-y={Math.PI - 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
-        <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
+        <CurvedMonitor glow="#9BB8D8" dark={false} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: '#1F2A37' }} />
         <Character model={SUPERVISOR.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={showTag} />
       </group>
@@ -298,9 +298,8 @@ function Roof({ visible }: { visible: boolean }) {
 const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-W / 2 - 1.4, 0, -D / 2), new THREE.Vector3(W / 2 + 0.4, floorY(FLOORS.length + 1) + 0.4, D / 2))
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
-function insets(w: number, overview = false) {
-  // en la vista del edificio, abajo a la izquierda está el contador grande
-  return w >= 1024 ? { l: 16, r: 380, t: 84, b: overview ? 170 : 16 } : { l: 0, r: 0, t: 64, b: 170 }
+function insets(w: number, _overview = false) {
+  return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {

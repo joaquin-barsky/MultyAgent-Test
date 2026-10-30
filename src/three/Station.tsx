@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import type { Agent } from '../data/agents'
 import { runProgress, useCrew } from '../sim/store'
 import { Character, Furn } from './models'
+import { CurvedMonitor } from './CurvedMonitor'
 
 export interface StationProps {
   agent: Agent
@@ -105,7 +106,6 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
       }
     : {}
 
-  const screen = waiting ? `glow:${NEED}` : working ? `glow:${agent.color}` : dark ? '#1d2a30' : '#43545a'
 
   return (
     <group position={position} rotation-y={rotation} scale={S}>
@@ -117,10 +117,9 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <mesh position={[0, 0.6, -0.1]} visible={false}>
           <boxGeometry args={[1.6, 1.3, 1.6]} />
         </mesh>
-        {/* escritorio más ancho con dos monitores */}
+        {/* escritorio más ancho con un monitor curvo largo */}
         <Furn name="desk" scale={[1.5, 1, 1.15]} />
-        <Furn name="computerScreen" position={[-0.21, 0.38, 0.0]} rotation-y={Math.PI - 0.22} tint={{ metalDark: screen }} />
-        <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: screen }} />
+        <CurvedMonitor glow={waiting ? NEED : working ? agent.color : null} dark={dark} />
         <Furn name="computerKeyboard" position={[0, 0.38, -0.2]} rotation-y={Math.PI} />
         <Furn name="computerMouse" position={[0.25, 0.38, -0.21]} rotation-y={Math.PI} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: agent.color }} />
