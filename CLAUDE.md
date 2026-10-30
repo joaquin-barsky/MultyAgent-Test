@@ -41,6 +41,8 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - El plan Max de Joaquín trae **USD 100 por mes de crédito de API** vinculado a su organización (se acredita mes a mes, el próximo el 14/11/2026; cada crédito vence antes del siguiente). No consume el uso del plan en Claude Code. Sirve para API, Batch, Agent SDK, Playground y Managed Agents. No hay tarjeta cargada en la consola ni crédito comprado. Límite de la organización: USD 500/mes (no tocado).
 - Precios por millón de tokens (entrada/salida): Haiku 5.5 USD 0,10/0,50; Sonnet 5.5 USD 2/10; Opus 5.5 USD 4/20. Batch = 50% off.
 - Para venderlo a clientes hace falta API (la suscripción personal no sirve para dar servicio a terceros).
+- **WhatsApp (Meta), Argentina, desde 1/10/2026**: cada respuesta del bot se cobra USD 0,026 (~ARS 37,7) pasando las **1.000 gratis por mes por número**. Plantillas que inicia el negocio: marketing USD 0,0618 (~ARS 89,6), utilidad USD 0,026. Si el cliente llega desde un anuncio "clic a WhatsApp" (en el celular), los mensajes son gratis por 7 días. Sin medio de pago cargado, pasadas las 1.000 no se entregan.
+- Estimación de costo mensual (charlado con Joaquín el 30/10/2026, sin mano de obra): concesionaria mediana (~600 charlas/mes) USD 90-150; desarrolladora (~300 charlas largas) USD 80-130; negocio chico (<1.000 respuestas/mes) USD 0-25. Lo grande es Meta, no la IA (Haiku cuesta USD 5-15/mes en esos volúmenes). Para cliente comercial, Vercel Hobby no sirve (es no comercial): Vercel Pro USD 20 o Cloudflare Workers gratis.
 
 ## Cómo se corre y se deploya
 - Local: `preview_start` con el nombre `orik-crew` (puerto 5191). Está en `C:\Users\joaqu\.claude\launch.json`. En dev, `/api/chat` lo sirve un plugin de `vite.config.ts`.
