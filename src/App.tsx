@@ -10,6 +10,10 @@ import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
+const OpenPlanScene = lazy(() => import('./scenes/OpenPlanScene'))
+
+// variante temporal para comparar: ?v=1 edificio, ?v=2 planta libre
+const readV = (): 1 | 2 => (new URLSearchParams(location.search).get('v') === '2' ? 2 : 1)
 // el diagrama (React Flow) se baja recién cuando abrís un agente
 const FlowPanel = lazy(() => import('./flow/FlowPanel').then((m) => ({ default: m.FlowPanel })))
 
@@ -77,6 +81,15 @@ export default function App() {
   useBrunoNotices()
   useShowcase()
   const narrow = useIsNarrow(1024)
+  const [v, setV] = useState(readV)
+  const pickV = (n: 1 | 2) => {
+    useCrew.getState().setFloor(null)
+    useCrew.getState().select(null)
+    setV(n)
+    const u = new URL(location.href)
+    u.searchParams.set('v', String(n))
+    history.replaceState(null, '', u)
+  }
   const { light, clock } = useDaylight()
   const floor = useCrew((s) => s.floor)
   const showcase = useCrew((s) => s.showcase)
@@ -105,11 +118,12 @@ export default function App() {
   return (
     <div className="stage relative h-dvh w-full overflow-hidden" data-cinema={showcase ? '' : undefined} style={{ background: focusBg ?? light.sky }}>
       <Suspense fallback={null}>
-        <BuildingScene style="vidrio" light={light} />
+        {v === 2 ? <OpenPlanScene light={light} /> : <BuildingScene style="vidrio" light={light} />}
       </Suspense>
       <ModelProgress />
       <TopBar clock={clock} phase={light.label} />
-      <FloorBar />
+      <FloorBar label={v === 2 ? 'Toda la oficina' : 'Edificio'} />
+      <VariantSwitch v={v} onPick={pickV} />
       <ShowcasePanel />
 
       {!narrow ? (
@@ -211,7 +225,20 @@ function Metric({ label, value, className = '' }: { label: string; value: string
 }
 
 /** aparece cuando estás dentro de un piso */
-function FloorBar() {
+function VariantSwitch({ v, onPick }: { v: 1 | 2; onPick: (n: 1 | 2) => void }) {
+  return (
+    <div className="cine-hide glass pointer-events-auto absolute right-4 top-4 z-30 hidden gap-1 rounded-[16px] p-1 lg:flex" role="tablist" aria-label="Vista">
+      {([1, 2] as const).map((n) => (
+        <button key={n} role="tab" aria-selected={v === n} onClick={() => onPick(n)} className="relative h-9 rounded-[12px] px-3.5 text-[13.5px] font-semibold">
+          {v === n && <motion.span layoutId="vsw" className="absolute inset-0 rounded-[12px] bg-[var(--ink)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+          <span className={`relative ${v === n ? 'text-[var(--bg)]' : ''}`}>{n === 1 ? 'Edificio' : 'Planta libre'}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function FloorBar({ label }: { label: string }) {
   const floor = useCrew((s) => s.floor)
   const setFloor = useCrew((s) => s.setFloor)
   const f = FLOORS.find((x) => x.id === floor)
@@ -244,7 +271,7 @@ function FloorBar() {
         >
           <div className="glass pointer-events-auto flex items-center gap-2 rounded-full p-1">
             <button onClick={() => setFloor(null)} className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--ink)] px-3.5 text-[13.5px] font-semibold text-[var(--bg)]">
-              <ArrowLeft size={15} /> Edificio
+              <ArrowLeft size={15} /> {label}
             </button>
             <span className="grid size-7 place-items-center rounded-full text-[12px] font-bold text-white" style={{ background: f.tint }}>{f.n}</span>
             <span className="min-w-[104px] text-[14.5px] font-semibold">{f.name}</span>

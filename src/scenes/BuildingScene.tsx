@@ -211,7 +211,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
   )
 }
 
-function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number }) {
+export function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number }) {
   const setChat = useCrew((s) => s.setChat)
   const panelOpen = useCrew((s) => s.selected !== null)
   const [hover, setHover] = useState(false)

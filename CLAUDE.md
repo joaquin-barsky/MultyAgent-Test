@@ -25,7 +25,11 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - **Último resultado** de cada agente (src/data/results.ts): posteo, reel, fotos, charla de WhatsApp, informe o números. Se ve en el panel del agente y en el panel del recorrido.
 - **Contador grande: sacado** (2026-10-30, no le gustó nada cómo se veía).
 - **Monitor curvo largo** en cada escritorio (src/three/CurvedMonitor.tsx), en lugar de dos monitores. Se enciende del color del agente cuando trabaja y amarillo cuando te necesita.
-- Cartel del equipo en la pared: le gusta que esté en la pared pero no cómo estaba (texto suelto). **Tres variantes a elegir con ?cartel=1..3**: 1 placa oscura con el número del piso, 2 letras luminosas del color del área, 3 pared pintada del color del área con el nombre grande.
+- **Cartel del equipo: variante 3 elegida** (2026-10-30): la pared lateral se pinta del color del área con "Equipo de" y el nombre grande. El nombre se achica solo para que entre siempre (antes "Administración" se cortaba).
+- **Pantallas con contenido**: el monitor curvo muestra una mini pantalla con el trabajo del agente mientras trabaja (foto del posteo, globitos del chat, números), dibujada una vez por agente (src/three/screenTexture.ts).
+- **Anillo de progreso** alrededor de cada puesto mientras trabaja, en lugar de la barrita flotante.
+- **Fondo de entrada** con más profundidad (radial, más claro detrás del edificio) en día, amanecer y atardecer.
+- **Variante planta libre** (?v=2, selector "Edificio / Planta libre" arriba a la derecha): un solo piso grande con 5 zonas por área (fondo: Dirección con la oficina de Bruno y Marketing; adelante: Finanzas, Administración y Ventas detrás de una pared baja), cada una con piso tintado y pared pintada con su nombre, separadores bajos de vidrio. Tocar una zona acerca la cámara; el recorrido panea de zona en zona sin cortes. Todos los agentes se animan siempre. Pendiente que Joaquín elija entre las dos.
 - **Bruno presente**: cada ~1 minuto manda solo un aviso corto en el chat (novedades de la actividad o alertas). Se arman en el navegador, no usan la IA ni gastan crédito. Máximo 8 por visita, no interrumpe si estás escribiendo. Contador de sin leer en la pestaña y en el botón del celular.
 - **Entorno con ciudad (calle, autos, árboles, vecinos): descartado**, lo vio infantil. Queda el edificio solo sobre su base.
 - La luz del edificio sigue la hora real de Buenos Aires (madrugada, amanecer, día, atardecer, noche). Para probar: `?hora=noche` (o madrugada, amanecer, dia, atardecer).
