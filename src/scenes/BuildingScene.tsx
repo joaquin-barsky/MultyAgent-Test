@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { CameraControls, Html, Stars, AdaptiveDpr, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { FLOORS, SUPERVISOR, agentsOn, type FloorId } from '../data/agents'
@@ -30,28 +30,13 @@ const LAYOUT: Record<string, [number, number]> = {
   leo: [-2.4, BACK], vale: [2.4, BACK], martin: [-2.4, FRONT], caro: [2.4, FRONT],
 }
 
-/** pasillo entre las dos filas y lugar del café de cada piso */
-const AISLE_Z = 0.4
-export interface BreakArea {
-  /** hacia dónde miran mientras descansan (la cafetera, el sillón...) */
-  focus: [number, number]
-  /** lugares para pararse; nunca hay dos personas en el mismo */
-  slots: [number, number][]
-}
-const BREAK: Record<FloorId, BreakArea> = {
-  direccion: { focus: [-4.3, 0.6], slots: [[-3.4, 1.4], [-3.4, -0.2], [-2.5, 2.6]] },
-  marketing: { focus: [0, -4.2], slots: [[-1.7, -3.1], [1.7, -3.1], [0, -3.3]] },
-  finanzas: { focus: [-4.2, 0.4], slots: [[-3.3, -0.3], [-3.3, 1.1], [0, -3.2]] },
-  administracion: { focus: [-4.3, 0.4], slots: [[-3.3, -0.3], [-3.3, 1.1], [0, -3.2]] },
-  ventas: { focus: [-4.4, -3.9], slots: [[-3.9, -2.9], [-2.7, -3.0], [-3.9, -1.8]] },
-}
-
 function buildSpots(): Spots {
   const s: Spots = {}
   for (const f of FLOORS) for (const a of agentsOn(f.id)) s[a.id] = [LAYOUT[a.id]?.[0] ?? 0, floorY(f.n), LAYOUT[a.id]?.[1] ?? 0]
   return s
 }
 const SPOTS = buildSpots()
+const AGENT_FLOOR: Record<string, FloorId> = Object.fromEntries(FLOORS.flatMap((f) => agentsOn(f.id).map((a) => [a.id, f.id])))
 
 const BZ = -D / 2 + 0.3 // pegado a la pared de atrás
 
@@ -114,7 +99,7 @@ function Decor({ id }: { id: FloorId }) {
   }
 }
 
-function Floor({ f, light, focused, overview }: { f: (typeof FLOORS)[number]; light: Light; focused: boolean; overview: boolean }) {
+function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof FLOORS)[number]; light: Light; focused: boolean; overview: boolean; showcased: boolean; touring: boolean }) {
   const setFloor = useCrew((s) => s.setFloor)
   const busy = useCrew((s) => agentsOn(f.id).filter((a) => s.runs[a.id].status === 'working').length)
   const [hover, setHover] = useState(false)
@@ -128,7 +113,7 @@ function Floor({ f, light, focused, overview }: { f: (typeof FLOORS)[number]; li
   }
 
   return (
-    <group position={[0, y, 0]} visible={overview || focused}>
+    <group position={[0, y, 0]} visible={(overview && !touring) || focused || showcased}>
       <group
         onClick={click}
         onPointerOver={(e) => {
@@ -204,10 +189,10 @@ function Floor({ f, light, focused, overview }: { f: (typeof FLOORS)[number]; li
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
-        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} spots={SPOTS} breakArea={BREAK[f.id]} floorId={f.id} aisleZ={AISLE_Z} />
+        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} showTag={focused} interactive={focused} animate={focused || showcased} />
       ))}
 
-      {overview && (
+      {overview && !touring && (
         <Html position={[-W / 2 - 0.4, 0.9, D / 2]} center zIndexRange={[9, 0]}>
           <button className="floor-tag" style={{ ['--c' as string]: f.tint }} onClick={() => setFloor(f.id)}>
             <span className="floor-n">{f.n}</span>
@@ -250,7 +235,7 @@ function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number })
         <Furn name="computerScreen" position={[-0.08, 0.38, -0.04]} rotation-y={Math.PI} tint={{ metalDark: 'glow:#9BB8D8' }} />
         <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: '#1F2A37' }} />
-        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} scale={0.62} animate={showTag} />
+        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.12, -0.5]} rotation-y={Math.PI} scale={0.62} animate={showTag} />
       </group>
       {showTag && hover && !panelOpen && (
         <Html position={[0, 1.6, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
@@ -314,8 +299,9 @@ function insets(w: number) {
   return w >= 1024 ? { l: 320, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
-function CameraRig({ floor }: { floor: FloorId | null }) {
+function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
   const ref = useRef<CameraControls>(null)
+  const drift = useRef(0)
   const size = useThree((s) => s.size)
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
 
@@ -336,7 +322,24 @@ function CameraRig({ floor }: { floor: FloorId | null }) {
     let dist: number
     let az: number
     let polar: number
-    if (!floor) {
+    const spot = showcase ? SPOTS[showcase] : null
+    if (spot) {
+      // recorrido: cámara baja y cerca del trabajador, de costado para que no tape el monitor
+      t = new THREE.Vector3(spot[0], spot[1] + 0.6, spot[2] - 0.3)
+      // de costado y un poco desde arriba, para ver a la persona y su pantalla sin que la tape el monitor
+      // del lado derecho (el monitor queda del otro lado y no tapa la cara)
+      const side = Math.random() > 0.5 ? 1 : -1
+      dist = narrow ? 5.2 : 4.2
+      az = 0.85
+      polar = 1.15
+      if (import.meta.env.DEV) {
+        const q = new URLSearchParams(location.search)
+        if (q.get('taz')) az = Number(q.get('taz'))
+        if (q.get('tpol')) polar = Number(q.get('tpol'))
+        if (q.get('tdist')) dist = Number(q.get('tdist'))
+      }
+      drift.current = 0.035 * -side
+    } else if (!floor) {
       const sp = BUILDING_BOX.getBoundingSphere(new THREE.Sphere())
       t = sp.center
       dist = (sp.radius * (narrow ? 1.02 : 0.86)) / Math.sin(Math.atan(tanFree))
@@ -352,8 +355,15 @@ function CameraRig({ floor }: { floor: FloorId | null }) {
       polar = 0.62
     }
     const p = t.clone().add(new THREE.Vector3(Math.sin(polar) * Math.sin(az), Math.cos(polar), Math.sin(polar) * Math.cos(az)).multiplyScalar(dist))
+    c.smoothTime = spot ? 1.3 : 0.5
+    if (!spot) drift.current = 0
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, true)
-  }, [floor, size.width, size.height, camera])
+  }, [floor, showcase, size.width, size.height, camera])
+
+  // mientras muestra a alguien, la cámara gira despacito alrededor
+  useFrame((_, dt) => {
+    if (drift.current && ref.current) ref.current.rotate(drift.current * dt, 0, true)
+  })
 
   return (
     <CameraControls
@@ -375,6 +385,8 @@ export default function BuildingScene({ light }: { style: BuildingStyle; light: 
   const floor = useCrew((s) => s.floor)
   const select = useCrew((s) => s.select)
   const selected = useCrew((s) => s.selected)
+  const showcase = useCrew((s) => s.showcase)
+  const showFloor = showcase ? AGENT_FLOOR[showcase] : null
   const spots = useMemo(() => SPOTS, [])
   return (
     <div className="scene-area absolute inset-0" style={{ pointerEvents: selected ? 'none' : 'auto' }}>
@@ -395,13 +407,13 @@ export default function BuildingScene({ light }: { style: BuildingStyle; light: 
           shadow-camera-far={70}
           shadow-bias={-0.0004}
         />
-        <Ground visible={!floor} />
+        <Ground visible={!floor && !showcase} />
         {FLOORS.map((f) => (
-          <Floor key={f.id} f={f} light={light} focused={floor === f.id} overview={!floor} />
+          <Floor key={f.id} f={f} light={light} focused={floor === f.id} overview={!floor} showcased={showFloor === f.id} touring={!!showcase} />
         ))}
-        <Roof visible={!floor} />
-        {!floor && <Packets spots={spots} lift={0.3} y={1} bulge={[0, 0, 4.4]} />}
-        <CameraRig floor={floor} />
+        <Roof visible={!floor && !showcase} />
+        {!floor && !showcase && <Packets spots={spots} lift={0.3} y={1} bulge={[0, 0, 4.4]} />}
+        <CameraRig floor={floor} showcase={showcase} />
       </Canvas>
     </div>
   )

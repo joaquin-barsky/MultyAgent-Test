@@ -149,6 +149,18 @@
   color: #15924a;
 }
 
+/* recorrido de cámara: se esconde toda la interfaz */
+.cine-hide {
+  transition: opacity 0.6s ease;
+}
+[data-cinema] .cine-hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+[data-cinema] .cine-hide * {
+  pointer-events: none !important;
+}
+
 /* temas: claro de día, oscuro de noche y madrugada */
 :root,
 [data-theme='dia'] {

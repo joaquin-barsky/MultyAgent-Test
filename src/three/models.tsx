@@ -48,7 +48,7 @@ export type Pose = 'sit' | 'idle' | 'walk' | 'emote-yes' | 'interact-right'
 
 /** Personaje animado de Kenney Mini Characters */
 /** animate=false deja al personaje quieto en su pose (los pisos que no estás mirando no se animan) */
-export function Character({ model, pose, animate = true, ...props }: GroupProps & { model: string; pose: Pose; animate?: boolean }) {
+export function Character({ model, pose, animate = true, typing = false, ...props }: GroupProps & { model: string; pose: Pose; animate?: boolean; typing?: boolean }) {
   const group = useRef<THREE.Group>(null)
   const { scene, animations } = useGLTF(`/models/chars/${model}.glb`)
   const clone = useMemo(() => {
@@ -63,6 +63,16 @@ export function Character({ model, pose, animate = true, ...props }: GroupProps 
     return c
   }, [scene])
   const { actions, mixer } = useAnimations(animations, group)
+  const arms = useMemo(() => [clone.getObjectByName('arm-left'), clone.getObjectByName('arm-right')], [clone])
+  const phase = useMemo(() => Math.random() * 10, [])
+
+  // teclear: mueve un poco los brazos encima de la pose sentada (la animación los vuelve a su lugar en cada cuadro)
+  useFrame(({ clock }) => {
+    if (!typing) return
+    const t = clock.elapsedTime * 15 + phase
+    arms[0]?.rotateX(Math.sin(t) * 0.16)
+    arms[1]?.rotateX(Math.sin(t + Math.PI) * 0.16)
+  })
 
   useEffect(() => {
     mixer.timeScale = animate ? 1 : 0

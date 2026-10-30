@@ -13,6 +13,38 @@ const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 const FlowPanel = lazy(() => import('./flow/FlowPanel').then((m) => ({ default: m.FlowPanel })))
 
 
+/** si no tocás nada por unos segundos, la cámara recorre a los trabajadores de cerca */
+function useShowcase() {
+  useEffect(() => {
+    let last = Date.now()
+    let next = 0
+    const poke = () => {
+      last = Date.now()
+      if (useCrew.getState().showcase) useCrew.getState().setShowcase(null)
+    }
+    const evs = ['pointermove', 'pointerdown', 'wheel', 'keydown', 'touchstart'] as const
+    evs.forEach((e) => window.addEventListener(e, poke, { passive: true }))
+    const id = setInterval(() => {
+      const s = useCrew.getState()
+      if (s.selected || s.chat) {
+        last = Date.now()
+        return
+      }
+      const now = Date.now()
+      if (now - last < 8000 || (s.showcase && now < next)) return
+      const pool = (s.floor ? agentsOn(s.floor) : AGENTS).filter((x) => x.id !== s.showcase)
+      const busy = pool.filter((x) => s.runs[x.id].status === 'working')
+      const from = busy.length ? busy : pool
+      s.setShowcase(from[Math.floor(Math.random() * from.length)].id)
+      next = now + 6500
+    }, 500)
+    return () => {
+      evs.forEach((e) => window.removeEventListener(e, poke))
+      clearInterval(id)
+    }
+  }, [])
+}
+
 function useTicker() {
   const tick = useCrew((s) => s.tick)
   useEffect(() => {
@@ -29,9 +61,11 @@ function useTicker() {
 export default function App() {
   useTicker()
   useBrunoNotices()
+  useShowcase()
   const narrow = useIsNarrow(1024)
   const { light, clock } = useDaylight()
   const floor = useCrew((s) => s.floor)
+  const showcase = useCrew((s) => s.showcase)
   const tint = FLOORS.find((f) => f.id === floor)?.tint
   // al entrar a un piso cambia la ambientación: fondo con el color del área
   const focusBg = tint
@@ -55,7 +89,7 @@ export default function App() {
   }, [light])
 
   return (
-    <div className="stage relative h-dvh w-full overflow-hidden" style={{ background: focusBg ?? light.sky }}>
+    <div className="stage relative h-dvh w-full overflow-hidden" data-cinema={showcase ? '' : undefined} style={{ background: focusBg ?? light.sky }}>
       <Suspense fallback={null}>
         <BuildingScene style="vidrio" light={light} />
       </Suspense>
@@ -65,10 +99,10 @@ export default function App() {
 
       {!narrow ? (
         <>
-          <aside className="pointer-events-none absolute bottom-4 left-4 top-[92px] z-10 flex w-[290px] flex-col">
+          <aside className="cine-hide pointer-events-none absolute bottom-4 left-4 top-[92px] z-10 flex w-[290px] flex-col">
             <FloorList />
           </aside>
-          <aside className="pointer-events-none absolute bottom-4 right-4 top-[92px] z-10 flex w-[350px] flex-col">
+          <aside className="cine-hide pointer-events-none absolute bottom-4 right-4 top-[92px] z-10 flex w-[350px] flex-col">
             <RightPanel />
           </aside>
         </>
@@ -117,7 +151,7 @@ function TopBar({ clock, phase }: { clock: string; phase: string }) {
   const minutes = useCrew((s) => s.minutes)
   const busy = useCrew((s) => Object.values(s.runs).filter((r) => r.status === 'working').length)
   return (
-    <header className="pointer-events-none absolute inset-x-2 top-2 z-30 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
+    <header className="cine-hide pointer-events-none absolute inset-x-2 top-2 z-30 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
       <div className="glass pointer-events-auto flex items-center gap-4 rounded-[20px] px-4 py-2 sm:gap-6 sm:px-5">
         <Metric label="Tareas esta semana" value={tasks.toLocaleString('es-AR')} />
         <Metric label="Horas ahorradas" value={Math.round(minutes / 60).toLocaleString('es-AR')} />
@@ -169,7 +203,7 @@ function FloorBar() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="pointer-events-none absolute inset-x-0 top-[70px] z-20 flex justify-center sm:top-[84px]"
+          className="cine-hide pointer-events-none absolute inset-x-0 top-[70px] z-20 flex justify-center sm:top-[84px]"
         >
           <div className="glass pointer-events-auto flex items-center gap-2 rounded-full p-1">
             <button onClick={() => setFloor(null)} className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--ink)] px-3.5 text-[13.5px] font-semibold text-[var(--bg)]">
@@ -365,7 +399,7 @@ function MobileDock() {
   const list = floor ? agentsOn(floor) : AGENTS
   return (
     <>
-      <div className="absolute inset-x-2 bottom-2 z-10">
+      <div className="cine-hide absolute inset-x-2 bottom-2 z-10">
         <div className="glass rounded-[24px] p-2">
           <div className="mb-2 flex gap-2">
             <div className="flex-1">

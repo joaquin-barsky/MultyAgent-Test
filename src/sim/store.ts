@@ -28,13 +28,6 @@ export interface FeedItem {
 
 export const PACKET_MS = 1800
 
-/** viaje a pie de un agente hasta el escritorio de otro del mismo piso */
-export interface Trip {
-  id: number
-  from: string
-  to: string
-  born: number
-}
 
 const maxCol = (a: Agent) => Math.max(...a.steps.map((s) => s.col))
 export const colSecs = (a: Agent, col: number) =>
@@ -43,7 +36,6 @@ export const colSecs = (a: Agent, col: number) =>
 interface State {
   runs: Record<string, AgentRun>
   packets: Packet[]
-  trips: Trip[]
   feed: FeedItem[]
   queue: { id: string; at: number }[]
   tasks: number
@@ -51,6 +43,9 @@ interface State {
   selected: string | null
   select: (id: string | null) => void
   floor: FloorId | null
+  /** agente que muestra la cámara de recorrido (cuando no tocás nada) */
+  showcase: string | null
+  setShowcase: (id: string | null) => void
   chat: boolean
   setChat: (v: boolean) => void
   setFloor: (f: FloorId | null) => void
@@ -67,7 +62,6 @@ const initialRuns = Object.fromEntries(
 export const useCrew = create<State>((set, get) => ({
   runs: initialRuns,
   packets: [],
-  trips: [],
   feed: [],
   queue: [
     { id: 'mora', at: performance.now() + 400 },
@@ -84,6 +78,8 @@ export const useCrew = create<State>((set, get) => ({
   selected: null,
   select: (id) => set({ selected: id }),
   floor: null,
+  showcase: null,
+  setShowcase: (id) => set({ showcase: id }),
   chat: false,
   setChat: (v) => set({ chat: v }),
   setFloor: (f) => set({ floor: f }),
@@ -102,11 +98,10 @@ export const useCrew = create<State>((set, get) => ({
     const s = get()
     const runs = { ...s.runs }
     let packets = s.packets.filter((p) => now - p.born < PACKET_MS)
-    let trips = s.trips.filter((t) => now - t.born < 16000)
     let feed = s.feed
     let queue = s.queue
     let { tasks, minutes } = s
-    let changed = packets.length !== s.packets.length || trips.length !== s.trips.length
+    let changed = packets.length !== s.packets.length
 
     for (const a of AGENTS) {
       const r = runs[a.id]
@@ -131,7 +126,6 @@ export const useCrew = create<State>((set, get) => ({
         minutes += a.savedMinutes
         if (a.handoffTo) {
           packets = [...packets, { id: seq++, from: a.id, to: a.handoffTo, born: now }]
-          if (AGENT_BY_ID[a.handoffTo]?.floor === a.floor && !trips.some((t) => t.from === a.id)) trips = [...trips, { id: seq++, from: a.id, to: a.handoffTo, born: now }]
           queue = [...queue, { id: a.handoffTo, at: now + PACKET_MS + 200 }]
           feed = [{ id: seq++, at: Date.now(), from: a.id, to: a.handoffTo, text: a.handoffText }, ...feed]
         }
@@ -157,7 +151,7 @@ export const useCrew = create<State>((set, get) => ({
     const dedup = keep.filter((q, i) => keep.findIndex((k) => k.id === q.id) === i)
 
     if (changed || dedup.length !== s.queue.length || feed !== s.feed) {
-      set({ runs, packets, trips, feed: feed.slice(0, 40), queue: dedup, tasks, minutes })
+      set({ runs, packets, feed: feed.slice(0, 40), queue: dedup, tasks, minutes })
     } else {
       set({ runs })
     }
