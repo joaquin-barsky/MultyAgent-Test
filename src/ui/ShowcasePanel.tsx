@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { FLOORS, agentsOn, type Agent } from '../data/agents'
 import { currentStep, runProgress, stepStatus, useCrew } from '../sim/store'
 import { NodeIcon } from './icons'
+import { ResultCard } from './ResultCard'
 
 // Panel del recorrido: mientras la cámara muestra un piso, cuenta qué está haciendo ese equipo
 export function ShowcasePanel() {
@@ -59,7 +60,11 @@ function Member({ agent }: { agent: Agent }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[13.5px] font-semibold">{agent.name}</span>
-          <span className="truncate text-[11.5px] text-[var(--muted)]">{step ? step.title : 'Libre'}</span>
+          {run.status === 'waiting' ? (
+            <span className="truncate text-[11.5px] font-bold text-[var(--need-ink)]">Te necesita</span>
+          ) : (
+            <span className="truncate text-[11.5px] text-[var(--muted)]">{step ? step.title : 'Libre'}</span>
+          )}
         </div>
         <span className="mt-1 block h-[4px] overflow-hidden rounded-full bg-[var(--line)]">
           <span className="block h-full rounded-full transition-[width] duration-200" style={{ width: `${p * 100}%`, background: agent.color }} />
@@ -73,7 +78,7 @@ function Member({ agent }: { agent: Agent }) {
 function LeadFlow({ id }: { id: (typeof FLOORS)[number]['id'] }) {
   const runs = useCrew((s) => s.runs)
   const team = agentsOn(id)
-  const lead = team.filter((a) => runs[a.id].status === 'working').sort((a, b) => runProgress(b, runs[b.id]) - runProgress(a, runs[a.id]))[0] ?? team[0]
+  const lead = team.filter((a) => runs[a.id].status !== 'idle').sort((a, b) => runProgress(b, runs[b.id]) - runProgress(a, runs[a.id]))[0] ?? team[0]
   const run = runs[lead.id]
   const cols = Array.from(new Set(lead.steps.map((s) => s.col))).sort((a, b) => a - b)
   const step = currentStep(lead, run)
@@ -98,6 +103,10 @@ function LeadFlow({ id }: { id: (typeof FLOORS)[number]['id'] }) {
       </div>
       <p className="mt-3 text-[14px] font-semibold leading-snug">{step ? step.title : 'Esperando el próximo pedido'}</p>
       <p className="mt-0.5 text-[12.5px] leading-snug text-[var(--muted)]">{step ? step.what : lead.mission}</p>
+      <div className="mt-4 rounded-2xl bg-[var(--card)] p-3 ring-1 ring-[var(--line)]">
+        <p className="mb-2 text-[11.5px] font-semibold" style={{ color: lead.color }}>Último resultado de {lead.name}</p>
+        <ResultCard agentId={lead.id} color={lead.color} compact />
+      </div>
     </div>
   )
 }

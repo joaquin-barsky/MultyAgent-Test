@@ -21,10 +21,49 @@ export interface StationProps {
 
 const S = 1.3 // escala del puesto
 // el personaje mira hacia +z (hacia el escritorio); un poco más alto para que no se hunda en la silla
-const SEAT: [number, number, number] = [0, 0.17, -0.46]
+// medido a ojo con ?seat=: el personaje apoyado en el almohadón, con el apoyabrazos por debajo de las piernas
+export const SEAT: [number, number, number] = [0, 0.25, -0.6]
+export let CHAR_SCALE = 0.62
+export let CHAIR_SCALE = 0.75
+export let CHAIR_Z = -0.6
+// solo desarrollo: ?seat=y,z,escalaPersonaje,escalaSilla,zSilla para ajustar a ojo
+if (import.meta.env.DEV) {
+  const q = new URLSearchParams(location.search).get('seat')
+  if (q) {
+    const v = q.split(',').map(Number)
+    SEAT[1] = v[0]
+    SEAT[2] = v[1]
+    CHAR_SCALE = v[2]
+    CHAIR_SCALE = v[3]
+    CHAIR_Z = v[4]
+  }
+}
+
+const NEED = '#FFC21A'
+let needTex: THREE.CanvasTexture | null = null
+/** círculo amarillo con signo de exclamación, dibujado una sola vez */
+function needTexture() {
+  if (needTex) return needTex
+  const cv = document.createElement('canvas')
+  cv.width = cv.height = 128
+  const c = cv.getContext('2d')!
+  c.fillStyle = NEED
+  c.beginPath()
+  c.arc(64, 64, 60, 0, Math.PI * 2)
+  c.fill()
+  c.fillStyle = '#3A2A00'
+  c.fillRect(56, 26, 16, 52)
+  c.beginPath()
+  c.arc(64, 96, 9, 0, Math.PI * 2)
+  c.fill()
+  needTex = new THREE.CanvasTexture(cv)
+  needTex.colorSpace = THREE.SRGBColorSpace
+  return needTex
+}
 
 export function Station({ agent, position, rotation = 0, lamps, dark, showTag, interactive, animate }: StationProps) {
   const working = useCrew((s) => s.runs[agent.id].status === 'working')
+  const waiting = useCrew((s) => s.runs[agent.id].status === 'waiting')
   const selected = useCrew((s) => s.selected === agent.id)
   const select = useCrew((s) => s.select)
   const panelOpen = useCrew((s) => s.selected !== null)
@@ -35,8 +74,9 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
   useFrame(({ clock }) => {
     if (ring.current) {
       const m = ring.current.material as THREE.MeshBasicMaterial
-      const target = hover || selected ? 0.9 : working ? 0.28 + Math.sin(clock.elapsedTime * 3) * 0.12 : 0
+      const target = waiting ? 0.75 + Math.sin(clock.elapsedTime * 5) * 0.25 : hover || selected ? 0.9 : working ? 0.28 + Math.sin(clock.elapsedTime * 3) * 0.12 : 0
       m.opacity += (target - m.opacity) * 0.15
+      m.color.set(waiting ? NEED : agent.color)
     }
     // la barrita se lee del estado sin re-dibujar el componente
     if (fill.current && working && animate) {
@@ -65,7 +105,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
       }
     : {}
 
-  const screen = working ? `glow:${agent.color}` : dark ? '#1d2a30' : '#43545a'
+  const screen = waiting ? `glow:${NEED}` : working ? `glow:${agent.color}` : dark ? '#1d2a30' : '#43545a'
 
   return (
     <group position={position} rotation-y={rotation} scale={S}>
@@ -83,10 +123,10 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: screen }} />
         <Furn name="computerKeyboard" position={[0, 0.38, -0.2]} rotation-y={Math.PI} />
         <Furn name="computerMouse" position={[0.25, 0.38, -0.21]} rotation-y={Math.PI} />
-        <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: agent.color }} />
+        <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: agent.color }} />
       </group>
       {/* siempre sentado; cuando trabaja teclea */}
-      <Character model={agent.model} pose="sit" position={SEAT} scale={0.62} animate={animate} typing={working && animate} />
+      <Character model={agent.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={animate} typing={working && animate} />
       {working && animate && (
         <Billboard position={[0, 1.08, -0.4]}>
           <mesh>
@@ -96,6 +136,15 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
           <mesh ref={fill} position={[-0.3, 0, 0.001]} scale={[0.02, 1, 1]}>
             <planeGeometry args={[0.6, 0.05]} />
             <meshBasicMaterial color={agent.color} toneMapped={false} />
+          </mesh>
+        </Billboard>
+      )}
+      {/* te necesita: cartelito amarillo arriba del escritorio */}
+      {waiting && (
+        <Billboard position={[0, 1.22, -0.35]}>
+          <mesh>
+            <circleGeometry args={[0.16, 32]} />
+            <meshBasicMaterial map={needTexture()} transparent toneMapped={false} />
           </mesh>
         </Billboard>
       )}

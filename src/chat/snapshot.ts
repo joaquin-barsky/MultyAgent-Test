@@ -15,7 +15,7 @@ export function teamSnapshot() {
       const step = currentStep(a, r)
       const last = a.steps.filter((x) => x.kind === 'ai' || x.kind === 'if').flatMap((x) => x.output).slice(0, 3).join('; ')
       lines.push(
-        `- ${a.name} (${a.role}): ${step ? `trabajando ahora en "${step.title}"` : 'libre'}. ${r.runs} vueltas esta semana. Ahorra ${a.savedMinutes} min por vuelta. Le pasa el trabajo a ${a.handoffTo ? AGENT_BY_ID[a.handoffTo].name : 'nadie'}. Últimos resultados: ${last}.`,
+        `- ${a.name} (${a.role}): ${r.status === 'waiting' ? `FRENADO esperando tu respuesta en "${step?.title}"` : step ? `trabajando ahora en "${step.title}"` : 'libre'}. ${r.runs} vueltas esta semana. Ahorra ${a.savedMinutes} min por vuelta. Le pasa el trabajo a ${a.handoffTo ? AGENT_BY_ID[a.handoffTo].name : 'nadie'}. Últimos resultados: ${last}.`,
       )
     }
   }

@@ -7,7 +7,8 @@ import type { Light } from '../sim/daylight'
 import { useCrew } from '../sim/store'
 import { Character, Furn } from '../three/models'
 import { Packets, type Spots } from '../three/Packets'
-import { Station } from '../three/Station'
+import { CHAIR_SCALE, CHAIR_Z, CHAR_SCALE, SEAT, Station } from '../three/Station'
+import { WallSign } from '../three/WallSign'
 
 export type BuildingStyle = 'vidrio'
 
@@ -101,6 +102,7 @@ function Decor({ id }: { id: FloorId }) {
 function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof FLOORS)[number]; light: Light; focused: boolean; overview: boolean; showcased: boolean; touring: boolean }) {
   const setFloor = useCrew((s) => s.setFloor)
   const busy = useCrew((s) => agentsOn(f.id).filter((a) => s.runs[a.id].status === 'working').length)
+  const need = useCrew((s) => agentsOn(f.id).filter((a) => s.runs[a.id].status === 'waiting').length)
   const [hover, setHover] = useState(false)
   const y = floorY(f.n)
   const agents = agentsOn(f.id)
@@ -185,6 +187,8 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
         <Furn key={z} name="rugRounded" position={[f.id === 'direccion' ? -1.6 : 0, 0.012, z - 0.3]} scale={[f.id === 'direccion' ? 3.4 : f.id === 'marketing' ? 5.4 : 3.8, 1, 2.1]} tint={{ carpet: tintMix(f.tint, 0.22), carpetDarker: tintMix(f.tint, 0.36) }} />
       ))}
       <Decor id={f.id} />
+      {/* cartel del equipo en la pared lateral (se ve en el recorrido y al entrar al piso) */}
+      {(focused || showcased) && <WallSign name={f.name} color={f.tint} width={4.3} position={[-W / 2 + 0.135, 1.5, -1.5]} rotation-y={Math.PI / 2} />}
       {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
 
       {agents.map((a) => (
@@ -197,7 +201,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
             <span className="floor-n">{f.n}</span>
             <span className="flex flex-col items-start leading-tight">
               <span>{f.name}</span>
-              <span className="floor-sub">{busy ? `${busy} trabajando` : 'En pausa'}</span>
+              {need ? <span className="floor-sub need">{need === 1 ? '1 te necesita' : `${need} te necesitan`}</span> : <span className="floor-sub">{busy ? `${busy} trabajando` : 'En pausa'}</span>}
             </span>
           </button>
         </Html>
@@ -233,8 +237,8 @@ function SupervisorDesk({ showTag, lamps }: { showTag: boolean; lamps: number })
         <Furn name="desk" scale={[1.5, 1, 1.15]} />
         <Furn name="computerScreen" position={[-0.21, 0.38, 0.0]} rotation-y={Math.PI - 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
         <Furn name="computerScreen" position={[0.21, 0.38, 0.0]} rotation-y={Math.PI + 0.22} tint={{ metalDark: 'glow:#9BB8D8' }} />
-        <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: '#1F2A37' }} />
-        <Character model={SUPERVISOR.model} pose="sit" position={[0, 0.17, -0.46]} scale={0.62} animate={showTag} />
+        <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: '#1F2A37' }} />
+        <Character model={SUPERVISOR.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={showTag} />
       </group>
       {showTag && hover && !panelOpen && (
         <Html position={[0, 1.6, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
@@ -294,8 +298,9 @@ function Roof({ visible }: { visible: boolean }) {
 const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-W / 2 - 1.4, 0, -D / 2), new THREE.Vector3(W / 2 + 0.4, floorY(FLOORS.length + 1) + 0.4, D / 2))
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
-function insets(w: number) {
-  return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
+function insets(w: number, overview = false) {
+  // en la vista del edificio, abajo a la izquierda está el contador grande
+  return w >= 1024 ? { l: 16, r: 380, t: 84, b: overview ? 170 : 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
@@ -311,7 +316,7 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     const c = ref.current
     if (!c) return
     if (import.meta.env.DEV) (window as unknown as { __cc: unknown }).__cc = c
-    const ins = insets(size.width)
+    const ins = insets(size.width, !floor && !showcase)
     // corre el centro de la imagen al centro del espacio libre entre paneles
     camera.setViewOffset(size.width, size.height, -(ins.l - ins.r) / 2, -(ins.t - ins.b) / 2, size.width, size.height)
     camera.updateProjectionMatrix()
@@ -363,6 +368,13 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     const tourFloor = (tour?.id ?? null) as FloorId | null
     const cut = !!tourFloor && !!lastTourFloor.current && tourFloor !== lastTourFloor.current
     lastTourFloor.current = tourFloor
+    // solo desarrollo: ?cam=x,y,z,tx,ty,tz fija la cámara para revisar de cerca
+    const cam = import.meta.env.DEV ? new URLSearchParams(location.search).get('cam') : null
+    if (cam) {
+      const v = cam.split(',').map(Number)
+      c.setLookAt(v[0], v[1], v[2], v[3], v[4], v[5], false)
+      return
+    }
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, !cut)
   }, [floor, showcase, shotKey, size.width, size.height, camera])
 

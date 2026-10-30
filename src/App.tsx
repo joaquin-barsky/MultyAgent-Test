@@ -8,6 +8,7 @@ import { useDaylight } from './sim/daylight'
 import { SupervisorChat, SupervisorHeader, useBrunoNotices, useChat } from './chat/SupervisorChat'
 import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
+import { BigCounter } from './ui/BigCounter'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 // el diagrama (React Flow) se baja recién cuando abrís un agente
@@ -19,12 +20,18 @@ function useShowcase() {
   useEffect(() => {
     let last = Date.now()
     let next = 0
+    // mover el mouse solo posterga el recorrido; para salir hay que hacer clic o tocar una tecla
+    const move = () => {
+      if (!useCrew.getState().showcase) last = Date.now()
+    }
     const poke = () => {
       last = Date.now()
       if (useCrew.getState().showcase) useCrew.getState().setShowcase(null)
     }
-    const evs = ['pointermove', 'pointerdown', 'wheel', 'keydown', 'touchstart'] as const
+    const evs = ['pointerdown', 'keydown', 'touchstart'] as const
     evs.forEach((e) => window.addEventListener(e, poke, { passive: true }))
+    window.addEventListener('pointermove', move, { passive: true })
+    window.addEventListener('wheel', move, { passive: true })
     const id = setInterval(() => {
       const s = useCrew.getState()
       if (s.selected || s.chat) {
@@ -46,6 +53,8 @@ function useShowcase() {
     }, 500)
     return () => {
       evs.forEach((e) => window.removeEventListener(e, poke))
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('wheel', move)
       clearInterval(id)
     }
   }, [])
@@ -103,6 +112,7 @@ export default function App() {
       <TopBar clock={clock} phase={light.label} />
       <FloorBar />
       <ShowcasePanel />
+      <BigCounter />
 
       {!narrow ? (
         <>
@@ -115,6 +125,8 @@ export default function App() {
       )}
 
       <LazyFlow />
+      {/* durante el recorrido, el clic para salir no toca nada de abajo */}
+      {showcase && <div className="fixed inset-0 z-[70] cursor-pointer" aria-label="Salir del recorrido" />}
     </div>
   )
 }
@@ -151,17 +163,40 @@ function ModelProgress() {
 }
 
 function TopBar({ clock, phase }: { clock: string; phase: string }) {
-  const tasks = useCrew((s) => s.tasks)
   const minutes = useCrew((s) => s.minutes)
   const busy = useCrew((s) => Object.values(s.runs).filter((r) => r.status === 'working').length)
+  const needIds = useCrew((s) => Object.keys(s.runs).filter((id) => s.runs[id].status === 'waiting').join(','))
+  const need = needIds ? needIds.split(',') : []
+  const openNeed = () => {
+    const a = AGENT_BY_ID[need[0]]
+    if (!a) return
+    useCrew.getState().setFloor(a.floor)
+    useCrew.getState().select(a.id)
+  }
   return (
-    <header className="cine-hide pointer-events-none absolute inset-x-2 top-2 z-30 flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
+    <header className="cine-hide pointer-events-none absolute inset-x-2 top-2 z-30 flex items-start gap-2 sm:inset-x-4 sm:top-4">
       <div className="glass pointer-events-auto flex items-center gap-4 rounded-[20px] px-4 py-2 sm:gap-6 sm:px-5">
-        <Metric label="Tareas esta semana" value={tasks.toLocaleString('es-AR')} />
         <Metric label="Horas ahorradas" value={Math.round(minutes / 60).toLocaleString('es-AR')} />
         <Metric label="Trabajando" value={`${busy} de ${AGENTS.length}`} className="hidden sm:flex" />
         <Metric label={phase} value={clock} className="hidden md:flex" />
       </div>
+      <AnimatePresence>
+        {need.length > 0 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={openNeed}
+            className="needchip pointer-events-auto mr-auto"
+          >
+            <span className="need-dot">!</span>
+            <span className="flex flex-col items-start leading-tight">
+              <span className="text-[11px] font-semibold opacity-75">{need.length === 1 ? 'Te necesita' : 'Te necesitan'}</span>
+              <span className="text-[14.5px] font-bold">{need.map((id) => AGENT_BY_ID[id].name).join(' y ')}</span>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

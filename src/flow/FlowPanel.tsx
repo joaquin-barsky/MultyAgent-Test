@@ -10,9 +10,11 @@ import { AGENT_BY_ID, FLOORS, type Agent, type FlowStep, type Preview, type Sub 
 import { colSecs, stepStatus, useCrew, type AgentRun } from '../sim/store'
 import { NodeIcon, iconColor } from '../ui/icons'
 import { useIsNarrow } from '../ui/useIsNarrow'
+import { AskCard } from '../ui/AskCard'
+import { ResultCard } from '../ui/ResultCard'
 
 type St = 'done' | 'running' | 'pending'
-type StepData = { step: FlowStep; agent: Agent; status: St; vertical: boolean; picked: boolean }
+type StepData = { step: FlowStep; agent: Agent; status: St; vertical: boolean; picked: boolean; waiting: boolean }
 type SubData = { sub: Sub; agent: Agent; active: boolean }
 type SectionData = { title: string; n: number; agent: Agent; w: number; h: number; active: boolean }
 type EdgeData = { color: string; status: St; items: number; label?: string; dashed?: boolean }
@@ -68,7 +70,7 @@ const StepNode = memo(function StepNode({ data }: NodeProps<Node<StepData>>) {
   const wide = step.kind === 'ai'
   const handoff = step.kind === 'handoff' ? AGENT_BY_ID[agent.handoffTo ?? ''] : null
   return (
-    <div className={`fnode ${status} ${picked ? 'picked' : ''} ${wide ? 'wide' : ''}`} style={{ ['--c' as string]: agent.color, ['--soft' as string]: agent.soft }}>
+    <div className={`fnode ${status} ${picked ? 'picked' : ''} ${wide ? 'wide' : ''} ${data.waiting && status === 'running' ? 'waiting' : ''}`} style={{ ['--c' as string]: agent.color, ['--soft' as string]: agent.soft }}>
       {step.kind !== 'trigger' && <Handle type="target" position={tgt} className="fhandle" />}
       <div className={`fbox ${step.kind} ${wide ? 'wide' : ''}`}>
         <div className="fbox-in">
@@ -205,7 +207,7 @@ const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; pic
         id: s.id,
         type: 'step',
         position: { x: p.x - (wide ? 55 : 0), y: p.y },
-        data: { step: s, agent, status: stepStatus(agent, run, s.col), vertical, picked: picked === s.id },
+        data: { step: s, agent, status: stepStatus(agent, run, s.col), vertical, picked: picked === s.id, waiting: run.status === 'waiting' },
         draggable: false,
       })
       if (wide && !vertical && s.subs) {
@@ -410,7 +412,7 @@ export function FlowPanel() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 300, damping: 34 }}
-          className="panel fixed inset-x-2 bottom-2 top-2 z-40 flex flex-col overflow-hidden sm:inset-4 sm:top-[76px] lg:left-[320px]"
+          className="panel fixed inset-x-2 bottom-2 top-2 z-40 flex flex-col overflow-hidden sm:inset-4 sm:top-[76px]"
         >
           <PanelBody key={agent.id} agent={agent} onClose={() => select(null)} />
         </motion.aside>
@@ -495,11 +497,22 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
         </div>
         <RunBtn className="mt-2.5 w-full justify-center sm:hidden" />
       </header>
+      {run.status === 'waiting' && (
+        <div className="border-b border-[var(--line)] px-4 py-3 sm:px-6">
+          <AskCard agentId={agent.id} />
+        </div>
+      )}
       <div className="relative flex-1 flow-bg">
         <ReactFlowProvider>
           <Graph agent={agent} picked={picked} onPick={setPicked} />
         </ReactFlowProvider>
         <AnimatePresence>{step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
+        {!step && (
+          <div className="result-float absolute right-3 top-3 z-10 hidden w-[300px] sm:block">
+            <p className="mb-2 text-[12px] font-semibold" style={{ color: agent.color }}>Último resultado</p>
+            <ResultCard agentId={agent.id} color={agent.color} />
+          </div>
+        )}
       </div>
       <RunBar agent={agent} run={run} />
     </>

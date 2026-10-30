@@ -4,9 +4,11 @@ import { create } from 'zustand'
 import { ArrowUp, BellRing, Sparkles } from 'lucide-react'
 import { AGENT_BY_ID, SUPERVISOR } from '../data/agents'
 import { useCrew } from '../sim/store'
+import { ASKS } from '../data/asks'
+import { AskCard } from '../ui/AskCard'
 import { localAnswer, teamSnapshot } from './snapshot'
 
-type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean; notice?: boolean }
+type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean; notice?: boolean; ask?: string }
 
 const SUGGESTIONS = ['¿Qué pasó hoy?', '¿Hubo algún problema?', '¿Cómo viene Marketing?', '¿Quién está trabajando ahora?']
 
@@ -35,6 +37,23 @@ const LEADS = ['Te cuento:', 'Novedad:', 'Para que sepas:']
 
 /** cada tanto Bruno cuenta algo que pasó, como un jefe que te pone al día */
 export function useBrunoNotices() {
+  // cuando un agente frena porque te necesita, Bruno te lo trae al chat con la pregunta
+  useEffect(
+    () =>
+      useCrew.subscribe((st, prev) => {
+        for (const id of Object.keys(st.runs)) {
+          if (st.runs[id].status !== 'waiting' || prev.runs[id]?.status === 'waiting') continue
+          const ask = ASKS[id]
+          if (!ask) continue
+          const c = useChat.getState()
+          c.set({
+            msgs: [...c.msgs, { id: mid++, role: 'assistant', content: `**${AGENT_BY_ID[id].name}** te necesita para seguir: ${ask.q}`, notice: true, ask: id }],
+            unread: c.open > 0 ? 0 : c.unread + 1,
+          })
+        }
+      }),
+    [],
+  )
   useEffect(() => {
     let sent = 0
     let seenFeed = 0
@@ -141,6 +160,23 @@ export function SupervisorChat() {
                   {m.notice && <BellRing size={13} className="mr-1.5 inline -translate-y-px text-[var(--accent)]" />}
                   <Rich text={m.content} />
                 </p>
+                {m.ask && (
+                  <AskCard
+                    agentId={m.ask}
+                    compact
+                    onAnswered={(label, stop) => {
+                      const name = AGENT_BY_ID[m.ask!].name
+                      const st = useChat.getState()
+                      st.set({
+                        msgs: [
+                          ...st.msgs,
+                          { id: mid++, role: 'user', content: label },
+                          { id: mid++, role: 'assistant', content: stop ? `Listo, le digo a **${name}** que frene esa tarea.` : `Listo, se lo paso a **${name}** y sigue.` },
+                        ],
+                      })
+                    }}
+                  />
+                )}
                 {m.local && <p className="mt-1.5 text-[11px] text-[var(--muted)]">Respuesta automática: la IA todavía no está conectada.</p>}
               </div>
             </motion.div>

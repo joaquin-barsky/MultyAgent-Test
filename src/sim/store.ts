@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
+import { ASKS } from '../data/asks'
 
-export type Status = 'idle' | 'working'
+/** waiting: frenó y te necesita; no sigue hasta que le contestes */
+export type Status = 'idle' | 'working' | 'waiting'
 
 export interface AgentRun {
   status: Status
@@ -9,6 +11,8 @@ export interface AgentRun {
   t: number
   runs: number
   idleFor: number
+  /** ya preguntó en esta vuelta */
+  asked?: boolean
 }
 
 export interface Packet {
@@ -52,6 +56,8 @@ interface State {
   setChat: (v: boolean) => void
   setFloor: (f: FloorId | null) => void
   start: (id: string, note?: string) => void
+  /** respuesta a un agente que te necesita */
+  answer: (id: string, text: string, stop?: boolean) => void
   tick: (dt: number) => void
 }
 
@@ -89,11 +95,19 @@ export const useCrew = create<State>((set, get) => ({
 
   start: (id, note) => {
     const r = get().runs[id]
-    if (!r || r.status === 'working') return
+    if (!r || r.status !== 'idle') return
     const feed = note
       ? [{ id: seq++, at: Date.now(), from: id, text: note }, ...get().feed].slice(0, 40)
       : get().feed
     set({ runs: { ...get().runs, [id]: { ...r, status: 'working', col: 0, t: 0 } }, feed })
+  },
+
+  answer: (id, text, stop) => {
+    const r = get().runs[id]
+    if (!r || r.status !== 'waiting') return
+    const next: AgentRun = stop ? { status: 'idle', col: 0, t: 0, runs: r.runs, idleFor: 0 } : { ...r, status: 'working', t: 0 }
+    const msg = stop ? `frenó la tarea por tu respuesta: “${text}”` : `siguió con tu respuesta: “${text}”`
+    set({ runs: { ...get().runs, [id]: next }, feed: [{ id: seq++, at: Date.now(), from: id, text: msg }, ...get().feed].slice(0, 40) })
   },
 
   tick: (dt) => {
@@ -116,12 +130,21 @@ export const useCrew = create<State>((set, get) => ({
         }
         continue
       }
+      if (r.status === 'waiting') continue
       changed = true
       let { col, t } = r
       t += dt
       if (t >= colSecs(a, col)) {
         col += 1
         t = 0
+        // a veces frena acá y te pregunta (como mucho 2 esperando a la vez)
+        const ask = ASKS[a.id]
+        const waiting = Object.values(runs).filter((x) => x.status === 'waiting').length
+        if (ask && ask.col === col && !r.asked && waiting < 2 && Math.random() < 0.6) {
+          runs[a.id] = { ...r, status: 'waiting', col, t: 0, asked: true }
+          feed = [{ id: seq++, at: Date.now(), from: a.id, text: 'te necesita para seguir' }, ...feed]
+          continue
+        }
       }
       if (col > maxCol(a)) {
         runs[a.id] = { status: 'idle', col: 0, t: 0, runs: r.runs + 1, idleFor: 0 }
@@ -144,7 +167,7 @@ export const useCrew = create<State>((set, get) => ({
       if (q.at <= now && r.status === 'idle' && r.idleFor > 1.2) {
         runs[q.id] = { ...r, status: 'working', col: 0, t: 0 }
         changed = true
-      } else if (q.at <= now && r.status === 'working') {
+      } else if (q.at <= now && r.status !== 'idle') {
         keep.push({ ...q, at: now + 1500 })
       } else {
         keep.push(q)
@@ -181,3 +204,14 @@ export function runProgress(a: Agent, r: AgentRun | undefined) {
 }
 
 export { AGENT_BY_ID }
+
+// solo desarrollo: ?need=paz hace que ese agente frene y te pregunte a los 1,5 s
+if (import.meta.env.DEV) {
+  const id = new URLSearchParams(location.search).get('need')
+  if (id && ASKS[id]) {
+    setTimeout(() => {
+      const s = useCrew.getState()
+      useCrew.setState({ runs: { ...s.runs, [id]: { ...s.runs[id], status: 'waiting', col: ASKS[id].col, t: 0, asked: true } } })
+    }, 1500)
+  }
+}
