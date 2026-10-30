@@ -74,6 +74,12 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Diagrama: sin líneas punteadas que se mueven ni bordes girando (se veía trabado). Se redibuja solo cuando un paso termina.
 - Todavía no está convencido del diseño general. **Pixel art: NO** (lo vio y no le gustó, 2026-10-28).
 
+## Referencias vistas en TikTok (2026-10-30)
+- Hay una ola de "oficinas virtuales de agentes" en TikTok (sep-oct 2026), casi todas hechas por creadores de IA para vender cursos o agencias: Lautaro ("IA para vender más", oficina 3D con etiquetas por área), Anastasia Javurek (agentes con personajes de Betty la Fea), David Chavarin, Kōdo Factory, AXIAL STUDIO, Pixel Agents/Claude Office (pixel art, para programadores).
+- **Kōdo Factory** es lo más parecido a nuestra idea: rascacielos donde cada piso es un agente, clima y hora reales, barra arriba con "trabajando / te necesitan / para revisar / dormidos", contador gigante de tokens tipo marcador, "centro de datos" y "central eléctrica" que miden el consumo. Es pixel art y más de juego.
+- **AXIAL STUDIO** (20 mil likes): "los Sims para manejar agentes". Oficina 3D limpia con un tablero de tareas (En curso / En revisión / Hecho) con barras de progreso por agente.
+- Comentarios repetidos en esos videos: "¿qué hacen realmente?", "es fundir tokens", "¿es open source?". La gente desconfía si no se ve un resultado concreto.
+
 ## Pendientes
 - WhatsApp: cargar `WHATSAPP_APP_SECRET` para validar que los mensajes vienen de Meta (opcional para la demo).
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
