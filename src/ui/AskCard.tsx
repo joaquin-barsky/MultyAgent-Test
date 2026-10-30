@@ -24,19 +24,19 @@ export function AskCard({ agentId, compact, onAnswered }: { agentId: string; com
   }
 
   return (
-    <div className={compact ? 'mt-2.5' : 'askcard'}>
+    <div className={compact ? 'mt-2.5' : 'askcard lg:flex lg:items-center lg:gap-4'}>
       {!compact && (
-        <div className="flex items-start gap-2.5">
+        <div className="flex items-start gap-2.5 lg:min-w-0 lg:flex-1">
           <span className="need-dot mt-0.5">
             <Hand size={15} strokeWidth={2.5} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-bold text-[var(--need-ink)]">{agent.name} te necesita para seguir</p>
+            <p className="text-[12.5px] font-bold text-[var(--need-ink)]">{agent.name} te necesita para seguir</p>
             <p className="mt-0.5 text-[14px] leading-snug">{ask.q}</p>
           </div>
         </div>
       )}
-      <div className={`flex flex-wrap gap-1.5 ${compact ? '' : 'mt-3'}`}>
+      <div className={`flex flex-wrap gap-1.5 ${compact ? '' : 'mt-3 lg:mt-0 lg:shrink-0'}`}>
         {ask.options.map((o) => (
           <button key={o.label} onClick={() => send(o.label, o.stop)} className={`askbtn ${o.stop ? 'stop' : ''}`}>
             {o.label}
@@ -44,7 +44,7 @@ export function AskCard({ agentId, compact, onAnswered }: { agentId: string; com
         ))}
       </div>
       <form
-        className="askinput mt-2"
+        className={`askinput mt-2 ${compact ? '' : 'lg:mt-0 lg:w-[230px] lg:shrink-0'}`}
         onSubmit={(e) => {
           e.preventDefault()
           if (text.trim()) send(text.trim())

@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import {
   Background, BackgroundVariant, BaseEdge, EdgeLabelRenderer, Handle, Position, ReactFlow, ReactFlowProvider,
-  getBezierPath, useReactFlow, type Edge, type EdgeProps, type Node, type NodeProps,
+  getBezierPath, useReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { AnimatePresence, motion } from 'motion/react'
@@ -19,8 +19,9 @@ type SubData = { sub: Sub; agent: Agent; active: boolean }
 type SectionData = { title: string; n: number; agent: Agent; w: number; h: number; active: boolean }
 type EdgeData = { color: string; status: St; items: number; label?: string; dashed?: boolean }
 
-const COL = 250
-const LANE = 230
+const COL = 228
+const FIT = { padding: { top: '4%', right: '4%', left: '4%', bottom: '68px' }, duration: 400 } as const
+const LANE = 180
 const maxCol = (a: Agent) => Math.max(...a.steps.map((s) => s.col))
 
 function PreviewCard({ p, color }: { p: Preview; color: string }) {
@@ -193,8 +194,8 @@ const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; pic
       out.push({
         id: `sec${i}`,
         type: 'section',
-        position: vertical ? { x: -40, y: a.y - 56 } : { x: a.x - 45, y: -78 },
-        data: { title: sec.title, n: i + 1, agent, active, w: vertical ? lanes * 175 + 60 : span * COL - 20, h: vertical ? span * 270 - 18 : lanes * LANE + 120 },
+        position: vertical ? { x: -40, y: a.y - 56 } : { x: a.x - 45, y: -60 },
+        data: { title: sec.title, n: i + 1, agent, active, w: vertical ? lanes * 175 + 60 : span * COL - 20, h: vertical ? span * 270 - 18 : lanes * LANE + 70 },
         draggable: false,
         selectable: false,
         zIndex: -1,
@@ -249,7 +250,7 @@ const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; pic
   useEffect(() => {
     // en celular arranca con zoom sobre los primeros pasos; el resto se ve deslizando
     const t = setTimeout(() => {
-      if (!vertical) return fitView({ padding: 0.06, duration: 400 })
+      if (!vertical) return fitView(FIT)
       const w = document.querySelector('.flow-bg')?.clientWidth ?? 360
       const zoom = 0.78
       const mid = ((lanes - 1) * 175) / 2 + 75
@@ -258,6 +259,15 @@ const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; pic
     return () => clearTimeout(t)
   }, [vertical, agent.id, fitView, setViewport, lanes])
 
+  // si cambia el alto del lienzo (por ejemplo aparece el aviso amarillo), se vuelve a encuadrar
+  const paneW = useStore((s) => s.width)
+  const paneH = useStore((s) => s.height)
+  useEffect(() => {
+    if (vertical || !paneW || !paneH) return
+    const t = setTimeout(() => fitView({ ...FIT, duration: 250 }), 160)
+    return () => clearTimeout(t)
+  }, [paneW, paneH, vertical, fitView])
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -265,7 +275,7 @@ const Graph = memo(function Graph({ agent, picked, onPick }: { agent: Agent; pic
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView={!vertical}
-      fitViewOptions={{ padding: 0.12 }}
+      fitViewOptions={FIT}
       minZoom={0.2}
       maxZoom={1.6}
       proOptions={{ hideAttribution: true }}
@@ -283,7 +293,7 @@ function ZoomButtons() {
   const { zoomIn, zoomOut, fitView } = useReactFlow()
   return (
     <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
-      <button className="zbtn" onClick={() => fitView({ padding: 0.12, duration: 300 })} aria-label="Ver todo"><Scan size={17} /></button>
+      <button className="zbtn" onClick={() => fitView({ ...FIT, duration: 300 })} aria-label="Ver todo"><Scan size={17} /></button>
       <button className="zbtn" onClick={() => zoomIn({ duration: 200 })} aria-label="Acercar"><Plus size={17} /></button>
       <button className="zbtn" onClick={() => zoomOut({ duration: 200 })} aria-label="Alejar"><Minus size={17} /></button>
     </div>
@@ -448,38 +458,28 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
 
   return (
     <>
-      <header className="panel-head relative overflow-hidden border-b border-[var(--line)] px-4 py-3.5 sm:px-6 sm:py-4" style={{ ['--c' as string]: agent.color }}>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <span className="size-12 shrink-0 overflow-hidden rounded-2xl ring-4 ring-[var(--card)] sm:size-16" style={{ background: agent.soft }}>
+      {/* encabezado compacto: el alto queda para el diagrama */}
+      <header className="panel-head relative overflow-hidden border-b border-[var(--line)] px-4 py-3 sm:px-5" style={{ ['--c' as string]: agent.color }}>
+        <div className="flex items-center gap-3">
+          <span className="size-11 shrink-0 overflow-hidden rounded-2xl ring-4 ring-[var(--card)] sm:size-12" style={{ background: agent.soft }}>
             <img src={agent.avatar} alt="" className="size-full object-cover" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h2 className="font-display text-[22px] font-bold leading-none sm:text-[28px]">{agent.name}</h2>
-              <span className="rounded-lg px-2 py-0.5 text-[12px] font-semibold text-white" style={{ background: floor.tint }}>Piso {floor.n}, {floor.name}</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <h2 className="font-display text-[21px] font-bold leading-none sm:text-[24px]">{agent.name}</h2>
+              <span className="text-[13.5px] text-[var(--muted)]">{agent.role}</span>
+              <span className="rounded-lg px-2 py-0.5 text-[11.5px] font-semibold text-white" style={{ background: floor.tint }}>Piso {floor.n}, {floor.name}</span>
             </div>
-            <p className="mt-1 text-[13.5px] text-[var(--muted)]">{agent.role}</p>
+            <p className="mt-1 truncate text-[13.5px] leading-snug max-lg:hidden">{agent.mission}</p>
           </div>
           <RunBtn className="max-sm:hidden" />
           <button onClick={onClose} className="ibtn" aria-label="Cerrar"><X size={18} /></button>
         </div>
-        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end">
-          <p className="flex-1 text-[14px] leading-snug max-sm:line-clamp-2 sm:text-[14.5px]">{agent.mission}</p>
-          {tools.length > 0 && (
-            <div className="flex items-center gap-1.5 max-sm:hidden">
-              <span className="mr-1 text-[11.5px] text-[var(--muted)]">Conectado a</span>
-              {tools.map((t) => (
-                <span key={t} className="grid size-8 place-items-center rounded-xl bg-[var(--card)] ring-1 ring-[var(--line)]">
-                  <NodeIcon icon={t as FlowStep['icon']} size={16} color={iconColor(t as FlowStep['icon'], agent.color)} />
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {/* en pantallas chicas los datos van acá; en grandes, en la columna de la derecha */}
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:hidden">
           <Stat label="Esta semana" value={`${run.runs} vueltas`} />
           <Stat label="Ahorra cada vez" value={`${agent.savedMinutes} min`} className="max-sm:hidden" />
-                    <button
+          <button
             className="stat text-left"
             onClick={() => {
               if (!next) return
@@ -498,21 +498,61 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
         <RunBtn className="mt-2.5 w-full justify-center sm:hidden" />
       </header>
       {run.status === 'waiting' && (
-        <div className="border-b border-[var(--line)] px-4 py-3 sm:px-6">
+        <div className="border-b border-[var(--line)] px-4 py-3 sm:px-5">
           <AskCard agentId={agent.id} />
         </div>
       )}
-      <div className="relative flex-1 flow-bg">
-        <ReactFlowProvider>
-          <Graph agent={agent} picked={picked} onPick={setPicked} />
-        </ReactFlowProvider>
-        <AnimatePresence>{step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
-        {!step && (
-          <div className="result-float absolute right-3 top-3 z-10 hidden w-[300px] sm:block">
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-w-0 flex-1 flow-bg">
+          <ReactFlowProvider>
+            <Graph agent={agent} picked={picked} onPick={setPicked} />
+          </ReactFlowProvider>
+          <AnimatePresence>{step && <StepDetail key={step.id} agent={agent} step={step} onClose={() => setPicked(null)} />}</AnimatePresence>
+        </div>
+        {/* columna propia: ya no tapa el diagrama */}
+        <aside className="noscroll hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-[var(--line)] p-4 lg:flex">
+          <div>
             <p className="mb-2 text-[12px] font-semibold" style={{ color: agent.color }}>Último resultado</p>
             <ResultCard agentId={agent.id} color={agent.color} />
           </div>
-        )}
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Stat label="Esta semana" value={`${run.runs} vueltas`} />
+              <Stat label="Ahorra cada vez" value={`${agent.savedMinutes} min`} />
+            </div>
+            <button
+            className="stat text-left"
+            onClick={() => {
+              if (!next) return
+              setFloor(next.floor)
+              select(next.id)
+            }}
+            disabled={!next}
+          >
+            <span className="text-[11.5px] text-[var(--muted)]">Le pasa a</span>
+            <span className="flex items-center gap-1.5 text-[15px] font-semibold">
+              {next && <img src={next.avatar} alt="" className="size-6 rounded-full object-cover" style={{ background: next.soft }} />}
+              {next?.name ?? 'Nadie'}
+            </span>
+          </button>
+          </div>
+          <div>
+            <p className="mb-1.5 text-[12px] font-semibold text-[var(--muted)]">Qué hace</p>
+            <p className="text-[13.5px] leading-snug">{agent.mission}</p>
+          </div>
+          {tools.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[12px] font-semibold text-[var(--muted)]">Conectado a</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tools.map((t) => (
+                  <span key={t} className="grid size-9 place-items-center rounded-xl bg-[var(--card)] ring-1 ring-[var(--line)]">
+                    <NodeIcon icon={t as FlowStep['icon']} size={17} color={iconColor(t as FlowStep['icon'], agent.color)} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
       <RunBar agent={agent} run={run} />
     </>

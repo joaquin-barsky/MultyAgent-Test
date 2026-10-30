@@ -12,8 +12,8 @@ import { ShowcasePanel } from './ui/ShowcasePanel'
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 const OpenPlanScene = lazy(() => import('./scenes/OpenPlanScene'))
 
-// variante temporal para comparar: ?v=1 edificio, ?v=2 planta libre
-const readV = (): 1 | 2 => (new URLSearchParams(location.search).get('v') === '2' ? 2 : 1)
+// dos vistas: ?v=2 planta libre (la de entrada), ?v=1 edificio
+const readV = (): 1 | 2 => (new URLSearchParams(location.search).get('v') === '1' ? 1 : 2)
 // el diagrama (React Flow) se baja recién cuando abrís un agente
 const FlowPanel = lazy(() => import('./flow/FlowPanel').then((m) => ({ default: m.FlowPanel })))
 
@@ -228,7 +228,7 @@ function Metric({ label, value, className = '' }: { label: string; value: string
 function VariantSwitch({ v, onPick }: { v: 1 | 2; onPick: (n: 1 | 2) => void }) {
   return (
     <div className="cine-hide glass pointer-events-auto absolute right-4 top-4 z-30 hidden gap-1 rounded-[16px] p-1 lg:flex" role="tablist" aria-label="Vista">
-      {([1, 2] as const).map((n) => (
+      {([2, 1] as const).map((n) => (
         <button key={n} role="tab" aria-selected={v === n} onClick={() => onPick(n)} className="relative h-9 rounded-[12px] px-3.5 text-[13.5px] font-semibold">
           {v === n && <motion.span layoutId="vsw" className="absolute inset-0 rounded-[12px] bg-[var(--ink)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
           <span className={`relative ${v === n ? 'text-[var(--bg)]' : ''}`}>{n === 1 ? 'Edificio' : 'Planta libre'}</span>
