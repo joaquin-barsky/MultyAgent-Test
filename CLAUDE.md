@@ -29,7 +29,11 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - **Pantallas con contenido**: el monitor curvo muestra una mini pantalla con el trabajo del agente mientras trabaja (foto del posteo, globitos del chat, números), dibujada una vez por agente (src/three/screenTexture.ts).
 - **Anillo de progreso** alrededor de cada puesto mientras trabaja, en lugar de la barrita flotante.
 - **Fondo de entrada** con más profundidad (radial, más claro detrás del edificio) en día, amanecer y atardecer.
-- **Variante planta libre** (?v=2, selector "Edificio / Planta libre" arriba a la derecha): un solo piso grande con 5 zonas por área (fondo: Dirección con la oficina de Bruno y Marketing; adelante: Finanzas, Administración y Ventas detrás de una pared baja), cada una con piso tintado y pared pintada con su nombre, separadores bajos de vidrio. Tocar una zona acerca la cámara; el recorrido panea de zona en zona sin cortes. Todos los agentes se animan siempre. Pendiente que Joaquín elija entre las dos.
+- **Variante planta libre** (?v=2, selector "Edificio / Planta libre" arriba a la derecha): un solo piso grande con 5 zonas por área (fondo: Dirección con la oficina de Bruno y Marketing; adelante: Finanzas, Administración y Ventas detrás de una pared baja), cada una con piso tintado y pared pintada con su nombre, separadores bajos de vidrio. Tocar una zona acerca la cámara; el recorrido panea de zona en zona sin cortes. Todos los agentes se animan siempre. **Quedan las dos** (pedido de Joaquín, 2026-10-30): planta libre es la vista de entrada, `?v=1` abre el edificio.
+- **Diagrama más grande** (2026-10-30): encabezado compacto, último resultado y datos en una columna propia a la derecha, se reencuadra solo cuando cambia el espacio (por ejemplo cuando aparece el aviso amarillo).
+- **Plantillas por rubro** (2026-10-30): selector "Empresa" arriba (Inmobiliaria, Desarrolladora, Concesionaria, E-commerce, Gastronomía). Cambia `?rubro=` y recarga. Los 5 lugares (pisos o zonas) son fijos, cambia el nombre (ej. Obra, Taller, Logística, Atención al cliente, Cocina y compras, Salón y reservas). Inmobiliaria tiene 19 agentes; los otros 10 cada uno, escritos cortos con `mk()` de `src/data/kit.ts` en `src/data/rubros/`. Cada rubro trae sus preguntas, resultados, avisos de Bruno y fotos (`public/img/car*, food*, shop*, obra*`). Bruno recibe la línea "Empresa: …" en la foto del equipo. En el servidor (WhatsApp) siempre es la inmobiliaria.
+- **Memoria de cada agente** (2026-10-30): pestaña "Proceso / Memoria" en el panel del agente. Grafo con tres ramas: Lo que sabe (su trabajo, con qué piensa, qué usa, con quién trabaja), Lo que aprendió (tus respuestas cuando frenó a preguntarte, en amarillo, más lo que sacó su IA) y Lo que recuerda (lo último que hizo). Lo que le enseñás queda guardado en el navegador (por rubro) y Bruno lo sabe.
+- **Repaso del día** (2026-10-30, solo pantallas grandes): botón abajo a la izquierda. Línea de 8:00 a ahora con una fila por área y un punto por tarea; se arrastra para ver qué pasó a cada hora, "Ver el día" lo recorre en 14 s, tocar una tarea abre al agente. Lo de antes de abrir la página es simulado (igual para todo el día), lo de la visita es real. Antes de las 9 muestra el día anterior.
 - **Bruno presente**: cada ~1 minuto manda solo un aviso corto en el chat (novedades de la actividad o alertas). Se arman en el navegador, no usan la IA ni gastan crédito. Máximo 8 por visita, no interrumpe si estás escribiendo. Contador de sin leer en la pestaña y en el botón del celular.
 - **Entorno con ciudad (calle, autos, árboles, vecinos): descartado**, lo vio infantil. Queda el edificio solo sobre su base.
 - La luz del edificio sigue la hora real de Buenos Aires (madrugada, amanecer, día, atardecer, noche). Para probar: `?hora=noche` (o madrugada, amanecer, dia, atardecer).
@@ -46,6 +50,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
   - Números argentinos: WhatsApp los manda con 549…, para contestar se saca el 9 (lo hace la función). En la lista de destinatarios se cargan sin el 9.
   - Variables en Vercel: `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN` (la misma va en Meta > Paso 2 > Webhooks), opcional `WHATSAPP_APP_SECRET`. `GET /api/whatsapp` muestra cuáles están cargadas.
   - Página de privacidad para Meta: `public/privacidad.html` (contacto: Gmail de Joaquín).
+  - **Resumen diario por WhatsApp** (2026-10-30): todos los días a las 19 (cron de Vercel en `vercel.json`, 22:00 UTC; en Hobby puede salir dentro de esa hora) llama a `GET /api/whatsapp?cron=resumen` y manda a los números de `WHATSAPP_RESUMEN_TO` (separados por coma, sin el 9) el resumen: tareas, horas, 3 cosas importantes y qué te espera, con botón "Abrir la oficina". Si le escribiste a Bruno en las últimas 24 h va como mensaje con botón; si no, Meta obliga a usar la plantilla aprobada `resumen_diario` (utilidad, es_AR). Escribirle "resumen" a Bruno lo trae al toque, sin IA. Armado en `api/_resumen.ts`. `CRON_SECRET` en Vercel protege las rutas; `?admin=plantilla` crea la plantilla y `?admin=estado` muestra si Meta la aprobó (con `&key=`).
   - Política de Meta desde ene-2026: no permite asistentes de IA "para todo"; sí bots de una empresa sobre su negocio.
 
 ## Costos
@@ -65,12 +70,14 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Stack: Vite 8 + React 19 + TS + Tailwind v4 + motion/react + lucide; 3D con React Three Fiber + drei (CameraControls); diagramas con React Flow (@xyflow/react); estado con zustand; íconos de marcas con simple-icons; `@anthropic-ai/sdk` en la función.
 - Chequeo de tipos de la función: `npx tsc -p tsconfig.api.json`.
 - Modelos 3D: Kenney Furniture Kit y Mini Characters (CC0) en `public/models`. Fotos de propiedades de Unsplash en `public/img`. Avatares `public/avatars/face-*.png` generados con `/?gen=avatars` (solo dev).
-- Links directos: `?piso=marketing`, `?agente=lupa`, `?hora=noche`.
+- Links directos: `?piso=marketing`, `?agente=lupa`, `?hora=noche`, `?rubro=concesionaria`, `?v=1` (edificio).
 - Capturas sin el panel del navegador: hay un script de puppeteer-core con Chrome (en el scratchpad de la sesión); el panel oculto de Claude congela el 3D.
 
 ## Estructura
 - `src/data/agents.ts` y `agents-extra.ts`: pisos, 19 agentes + supervisor, pasos, secciones, nodos de IA con sus herramientas, condiciones y vistas previas.
-- `src/sim/store.ts`: simulación. `src/sim/daylight.ts`: luz por hora.
+- `src/data/kit.ts` (rubros y `mk()`), `src/data/rubros/` (los otros 4 equipos), `src/data/alerts.ts` (avisos de Bruno).
+- `src/sim/store.ts`: simulación y memoria aprendida (`learned`). `src/sim/daylight.ts`: luz por hora. `src/sim/replay.ts` + `src/ui/DayReplay.tsx`: repaso del día.
+- `src/flow/MemoryGraph.tsx`: memoria del agente. `src/ui/RubroPicker.tsx`: selector de empresa. `src/scenes/OpenPlanScene.tsx`: planta libre; `src/scenes/slots.ts` acomoda escritorios de los rubros nuevos.
 - `src/scenes/BuildingScene.tsx`: edificio, pisos, cámara (encuadre según el espacio libre entre paneles).
 - `src/flow/FlowPanel.tsx`: panel estilo n8n con secciones, sub nodos, vistas previas y barra de ejecución.
 - `src/chat/`: chat con Bruno y la "foto" del equipo que se le manda. `api/chat.ts`: función de Vercel.
@@ -93,6 +100,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 ## Pendientes
 - WhatsApp: cargar `WHATSAPP_APP_SECRET` para validar que los mensajes vienen de Meta (opcional para la demo).
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
+- Órdenes a Bruno (que les pase tareas a los agentes): **más adelante**, cuando sea real (Joaquín, 2026-10-30).
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.
 - Definir con Joaquín otra dirección de diseño (pixel art: **descartado**, no le gustó). Esperar su referencia o captura.
 - Relevar con Joaquín qué problemas vio en Calle Real para elegir los primeros agentes reales.

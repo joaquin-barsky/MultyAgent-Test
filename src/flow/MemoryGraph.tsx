@@ -82,7 +82,9 @@ type Leaf = Omit<LeafData, 'agent' | 'side'>
 
 /** arma las tres ramas del cerebro con los datos del agente */
 function branches(agent: Agent, learned: Learned[], feed: FeedItem[]): Record<Kind, Leaf[]> {
-  const from = AGENTS.filter((a) => a.handoffTo === agent.id).map((a) => a.name)
+  const trig = agent.steps.find((s) => s.kind === 'trigger')?.subtitle.match(/^De (.+)$/)?.[1]
+  const linked = AGENTS.filter((a) => a.handoffTo === agent.id).map((a) => a.name)
+  const from = linked.length ? linked : trig && AGENTS.some((a) => a.name === trig) ? [trig] : []
   const next = agent.handoffTo ? AGENT_BY_ID[agent.handoffTo]?.name : null
   const models = [...new Set(agent.steps.flatMap((s) => s.subs ?? []).filter((x) => x.kind === 'model').map((x) => x.label))]
   const tools = [...new Set([...agent.steps.filter((s) => s.kind === 'action').map((s) => s.subtitle), ...agent.steps.flatMap((s) => s.subs ?? []).filter((x) => x.kind === 'tool').map((x) => x.label)])]
