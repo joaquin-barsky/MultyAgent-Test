@@ -302,6 +302,7 @@ function insets(w: number) {
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
   const ref = useRef<CameraControls>(null)
   const drift = useRef(0)
+  const lastTourFloor = useRef<FloorId | null>(null)
   const size = useThree((s) => s.size)
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
 
@@ -357,7 +358,11 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     const p = t.clone().add(new THREE.Vector3(Math.sin(polar) * Math.sin(az), Math.cos(polar), Math.sin(polar) * Math.cos(az)).multiplyScalar(dist))
     c.smoothTime = spot ? 1.3 : 0.5
     if (!spot) drift.current = 0
-    c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, true)
+    // al pasar a otro piso durante el recorrido, corte directo (si no, se ve el vacío entre pisos)
+    const tourFloor = showcase ? AGENT_FLOOR[showcase] : null
+    const cut = !!tourFloor && !!lastTourFloor.current && tourFloor !== lastTourFloor.current
+    lastTourFloor.current = tourFloor
+    c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, !cut)
   }, [floor, showcase, size.width, size.height, camera])
 
   // mientras muestra a alguien, la cámara gira despacito alrededor

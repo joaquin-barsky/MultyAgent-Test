@@ -79,7 +79,7 @@ export function Station({ agent, position, rotation = 0, lamps, dark, showTag, i
         <Furn name="desk" />
         <Furn name="computerScreen" position={[-0.08, 0.38, -0.04]} rotation-y={Math.PI} tint={{ metalDark: screen }} />
         <Furn name="computerKeyboard" position={[-0.08, 0.38, -0.2]} rotation-y={Math.PI} />
-        <Furn name="lampSquareTable" position={[0.26, 0.38, -0.02]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
+        <Furn name="lampSquareTable" position={[-0.34, 0.38, 0.04]} tint={{ lamp: lamps > 0 ? 'glow:#FFD58A' : '#F3E6C4' }} />
         <Furn name="chairDesk" position={[0, 0, -0.52]} tint={{ carpet: agent.color }} />
       </group>
       {/* siempre sentado; cuando trabaja teclea */}

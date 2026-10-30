@@ -18,6 +18,7 @@ function useShowcase() {
   useEffect(() => {
     let last = Date.now()
     let next = 0
+    let streak = 0
     const poke = () => {
       last = Date.now()
       if (useCrew.getState().showcase) useCrew.getState().setShowcase(null)
@@ -32,7 +33,11 @@ function useShowcase() {
       }
       const now = Date.now()
       if (now - last < 8000 || (s.showcase && now < next)) return
-      const pool = (s.floor ? agentsOn(s.floor) : AGENTS).filter((x) => x.id !== s.showcase)
+      // varias tomas seguidas en el mismo piso y después cambia de piso
+      const cur = s.showcase ? AGENTS.find((x) => x.id === s.showcase)?.floor : null
+      const stay = !s.floor && cur && streak < 2
+      const pool = (s.floor ? agentsOn(s.floor) : stay ? agentsOn(cur) : AGENTS.filter((x) => x.floor !== cur)).filter((x) => x.id !== s.showcase)
+      streak = stay ? streak + 1 : 0
       const busy = pool.filter((x) => s.runs[x.id].status === 'working')
       const from = busy.length ? busy : pool
       s.setShowcase(from[Math.floor(Math.random() * from.length)].id)
