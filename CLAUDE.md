@@ -82,6 +82,11 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Links directos: `?piso=marketing`, `?agente=lupa`, `?hora=noche`, `?v=1` (edificio), `?noche` (modo noche).
 - Capturas sin el panel del navegador: hay un script de puppeteer-core con Chrome (en el scratchpad de la sesión); el panel oculto de Claude congela el 3D.
 
+## Video de muestra
+- `videos/orik-crew-demo.mp4` (fuera de git): 36 s, 1920x1080, 30 fps, sin audio (2026-10-30). Muestra el vuelo de entrada, la zona de Marketing, a Cata con su proceso y la pregunta que frena, su memoria, una pregunta a Bruno, el tablero, el repaso del día, el modo noche y el edificio.
+- Se graba de producción con `scripts/video/rec.mjs` (puppeteer-core con Chrome y GPU, cursor visible agregado solo para el video). `blank.cjs`/`cut.cjs` encuentran el rato vacío al pasar al edificio y `zoom.cjs` arma la lista de ffmpeg con ese corte y acercamientos suaves en los tramos quietos. Hace falta `puppeteer-core` y `sharp` instalados donde se corra, y ffmpeg.
+- Ojo: Bruno tarda ~4 s en contestar; por eso se le pregunta antes de abrir el tablero.
+
 ## Estructura
 - `src/data/agents.ts` y `agents-extra.ts`: pisos, 19 agentes + supervisor, pasos, secciones, nodos de IA con sus herramientas, condiciones y vistas previas.
 - `src/data/alerts.ts`: avisos de Bruno.
