@@ -112,6 +112,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Comentarios repetidos en esos videos: "¿qué hacen realmente?", "es fundir tokens", "¿es open source?". La gente desconfía si no se ve un resultado concreto.
 
 ## Pendientes
+- **Bruno por WhatsApp se muda al proyecto real del estudio** (pedido de Joaquín, 2026-10-31): el mismo número y la misma app de Meta pasan a atender al supervisor real del estudio, que Joaquín va a crear en otro chat. Cuando esté: (1) cargar las variables de WhatsApp en el proyecto nuevo, (2) cambiar en Meta la dirección del webhook (Caso de uso > Paso 2 > Webhooks) a la función nueva y verificarla, (3) en esta demo sacar el cron de `vercel.json` y las variables `WHATSAPP_*` y `CRON_SECRET` para que no mande nada más. El chat de Bruno en la página de la demo sigue igual. Para uso real: cargar `WHATSAPP_APP_SECRET`, memoria guardada en una base (la de la función se borra) y una clave de IA propia del estudio.
 - WhatsApp: cargar `WHATSAPP_APP_SECRET` para validar que los mensajes vienen de Meta (opcional para la demo).
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
 - Órdenes a Bruno (que les pase tareas a los agentes): **más adelante**, cuando sea real (Joaquín, 2026-10-30).
