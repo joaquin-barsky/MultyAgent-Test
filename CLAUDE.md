@@ -112,8 +112,7 @@ Se ve en una página con un **edificio 3D de 5 pisos, un piso por área**. Tocá
 - Comentarios repetidos en esos videos: "¿qué hacen realmente?", "es fundir tokens", "¿es open source?". La gente desconfía si no se ve un resultado concreto.
 
 ## Pendientes
-- **Bruno por WhatsApp se muda al proyecto real del estudio** (pedido de Joaquín, 2026-10-31): el mismo número y la misma app de Meta pasan a atender al supervisor real del estudio, que Joaquín va a crear en otro chat. Cuando esté: (1) cargar las variables de WhatsApp en el proyecto nuevo, (2) cambiar en Meta la dirección del webhook (Caso de uso > Paso 2 > Webhooks) a la función nueva y verificarla, (3) en esta demo sacar el cron de `vercel.json` y las variables `WHATSAPP_*` y `CRON_SECRET` para que no mande nada más. El chat de Bruno en la página de la demo sigue igual. Para uso real: cargar `WHATSAPP_APP_SECRET`, memoria guardada en una base (la de la función se borra) y una clave de IA propia del estudio.
-- WhatsApp: cargar `WHATSAPP_APP_SECRET` para validar que los mensajes vienen de Meta (opcional para la demo).
+- **Bruno por WhatsApp se mudó** (2026-10-31) al proyecto real del estudio: `C:\Users\joaqu\Orik Studio-Agency` (https://orik-studio-agency.vercel.app). El número y la app de Meta ahora atienden al Bruno del estudio: la cuenta de WhatsApp 2470685390090126 tiene `override_callback_uri` apuntando a la función nueva. En esta demo se sacaron el cron de `vercel.json` y las variables `WHATSAPP_*` y `CRON_SECRET`: ya no manda ni contesta nada por WhatsApp. `api/whatsapp.ts` quedó en el código, pero sin variables no hace nada. El chat de Bruno en la página sigue igual.
 - Renovar la clave `bruno-chat` antes del 27/11/2026.
 - Órdenes a Bruno (que les pase tareas a los agentes): **más adelante**, cuando sea real (Joaquín, 2026-10-30).
 - Aprovechar los USD 100 promocionales antes del 16/11 para probar agentes reales.

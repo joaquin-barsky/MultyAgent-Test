@@ -1,3 +1,1 @@
-{
-  "crons": [{ "path": "/api/whatsapp?cron=resumen", "schedule": "0 22 * * *" }]
-}
+{}
