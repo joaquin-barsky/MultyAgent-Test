@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
 import { ASKS } from '../data/asks'
+import { REC } from './rec'
 
 /** waiting: frenó y te necesita; no sigue hasta que le contestes */
 export type Status = 'idle' | 'working' | 'waiting'
@@ -96,7 +97,7 @@ interface State {
 let seq = 1
 
 const initialRuns = Object.fromEntries(
-  AGENTS.map((a) => [a.id, { status: 'idle', col: 0, t: 0, runs: a.runsWeek, idleFor: 0 } as AgentRun]),
+  AGENTS.map((a) => [a.id, { status: REC ? 'working' : 'idle', col: 0, t: 0, runs: a.runsWeek, idleFor: 0 } as AgentRun]),
 )
 
 // quiénes arrancan apenas abrís la página
@@ -179,13 +180,15 @@ export const useCrew = create<State>((set, get) => ({
         // a veces frena acá y te pregunta (como mucho 2 esperando a la vez)
         const ask = ASKS[a.id]
         const waiting = Object.values(runs).filter((x) => x.status === 'waiting').length
-        if (ask && ask.col === col && !r.asked && waiting < 2 && Math.random() < 0.6) {
+        if (!REC && ask && ask.col === col && !r.asked && waiting < 2 && Math.random() < 0.6) {
           runs[a.id] = { ...r, status: 'waiting', col, t: 0, asked: true }
           feed = [{ id: seq++, at: Date.now(), from: a.id, text: 'te necesita para seguir' }, ...feed]
           continue
         }
       }
-      if (col > maxCol(a)) {
+      if (col > maxCol(a) && REC) {
+        runs[a.id] = { ...r, col: 0, t: 0 }
+      } else if (col > maxCol(a)) {
         runs[a.id] = { status: 'idle', col: 0, t: 0, runs: r.runs + 1, idleFor: 0 }
         tasks += 1
         minutes += a.savedMinutes

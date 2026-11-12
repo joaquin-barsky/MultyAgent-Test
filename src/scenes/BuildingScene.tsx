@@ -12,6 +12,7 @@ import { WallSign, paintedWall } from '../three/WallSign'
 import { CurvedMonitor } from '../three/CurvedMonitor'
 import { cancelIntro, introFly, introPending } from './intro'
 import { StatusBoard } from '../three/StatusBoard'
+import { REC } from '../sim/rec'
 
 export type BuildingStyle = 'vidrio'
 
@@ -213,6 +214,33 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
   )
 }
 
+/** post-it pegado al frente del escritorio de Bruno (solo en ?rec, para el video) */
+function PostIt() {
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 256
+    const g = c.getContext('2d')!
+    g.fillStyle = '#FFE066'
+    g.fillRect(0, 0, 256, 256)
+    g.fillStyle = 'rgba(0,0,0,.06)'
+    g.fillRect(0, 0, 256, 34)
+    g.fillStyle = '#2B2B2B'
+    g.font = "600 46px 'Segoe Print', 'Bradley Hand', cursive"
+    g.textAlign = 'center'
+    g.fillText('comprar', 128, 118)
+    g.fillText('leche', 128, 182)
+    const t = new THREE.CanvasTexture(c)
+    t.colorSpace = THREE.SRGBColorSpace
+    return t
+  }, [])
+  return (
+    <mesh position={[0.63, 0.27, 0.234]} rotation-z={0.08}>
+      <planeGeometry args={[0.13, 0.13]} />
+      <meshStandardMaterial map={tex} roughness={0.9} />
+    </mesh>
+  )
+}
+
 export function SupervisorDesk({ showTag, lamps, walls = true }: { showTag: boolean; lamps: number; walls?: boolean }) {
   const setChat = useCrew((s) => s.setChat)
   const panelOpen = useCrew((s) => s.selected !== null)
@@ -249,7 +277,8 @@ export function SupervisorDesk({ showTag, lamps, walls = true }: { showTag: bool
         <Furn name="laptop" position={[0.42, 0.384, -0.05]} rotation-y={Math.PI + 0.35} scale={0.8} />
         <Furn name="pottedPlant" position={[0.95, 0, -0.25]} scale={1.1} />
         <Furn name="chairDesk" position={[0, 0, CHAIR_Z]} scale={CHAIR_SCALE} tint={{ carpet: '#1F2A37' }} />
-        <Character model={SUPERVISOR.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={showTag} />
+        <Character model={SUPERVISOR.model} pose="sit" position={SEAT} scale={CHAR_SCALE} animate={showTag || REC} typing={REC} />
+        {REC && <PostIt />}
       </group>
       {showTag && hover && !panelOpen && (
         <Html position={[0, 1.6, -0.2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
@@ -310,6 +339,7 @@ const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-W / 2 - 1.4, 0, -D / 2), 
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
 function insets(w: number, _overview = false) {
+  if (REC) return { l: 0, r: 0, t: 0, b: 0 }
   return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
@@ -380,6 +410,14 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     lastTourFloor.current = tourFloor
     // solo desarrollo: ?cam=x,y,z,tx,ty,tz fija la cámara para revisar de cerca
     const cam = import.meta.env.DEV ? new URLSearchParams(location.search).get('cam') : null
+    if (REC) {
+      // la cámara la maneja el grabador (window.__cc)
+      if (cam) {
+        const v = cam.split(',').map(Number)
+        c.setLookAt(v[0], v[1], v[2], v[3], v[4], v[5], false)
+      }
+      return
+    }
     if (cam) {
       const v = cam.split(',').map(Number)
       c.setLookAt(v[0], v[1], v[2], v[3], v[4], v[5], false)
@@ -400,11 +438,11 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     <CameraControls
       ref={ref}
       makeDefault
-      minPolarAngle={0.3}
-      maxPolarAngle={1.45}
-      minAzimuthAngle={-0.6}
-      maxAzimuthAngle={1.4}
-      minDistance={4}
+      minPolarAngle={REC ? 0 : 0.3}
+      maxPolarAngle={REC ? Math.PI : 1.45}
+      minAzimuthAngle={REC ? -Infinity : -0.6}
+      maxAzimuthAngle={REC ? Infinity : 1.4}
+      minDistance={REC ? 0.1 : 4}
       maxDistance={80}
       truckSpeed={0}
       smoothTime={0.5}

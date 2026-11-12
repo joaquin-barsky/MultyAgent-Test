@@ -2,6 +2,12 @@
 @import '@fontsource-variable/bricolage-grotesque';
 @import '@fontsource-variable/figtree';
 
+/* ?rec (solo desarrollo): solo la escena 3D, sin paneles ni carteles */
+html.rec .stage > :not(.scene-area),
+html.rec .scene-area div:not(:has(canvas)) {
+  display: none !important;
+}
+
 @theme {
   --font-sans: 'Figtree Variable', system-ui, sans-serif;
   --font-display: 'Bricolage Grotesque Variable', 'Figtree Variable', sans-serif;
