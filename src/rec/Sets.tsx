@@ -784,9 +784,9 @@ function Cafe({ position, desde }: { position: V3; desde: number }) {
     </group>
   )
 }
-function Celu({ position, rotation }: { position: V3; rotation: V3 }) {
+function Celu({ position, rotation, escala = 1 }: { position: V3; rotation: V3; escala?: number }) {
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position} rotation={rotation} scale={escala}>
       <RoundedBox args={[0.035, 0.07, 0.005]} radius={0.003} smoothness={2}><meshStandardMaterial color="#111" /></RoundedBox>
       <mesh position={[0, 0, 0.0027]}><planeGeometry args={[0.031, 0.064]} /><meshStandardMaterial color="#000" emissive="#9fe8ff" emissiveIntensity={1.2} /></mesh>
     </group>
@@ -817,7 +817,7 @@ function Depto() {
       <Furn name="plantSmall2" position={[1.13, 0.27, -1.47]} scale={F * 1.1} />
       {/* living */}
       <Furn name="rugRound" position={[1.0, 0.002, 0.45]} scale={F * 1.6} tint={{ carpet: '#2f5a4a', carpetDarker: '#244a3c' }} />
-      <Furn name="loungeSofa" position={[1.0, 0, 1.0]} scale={F * 1.25} rotation-y={Math.PI} tint={{ carpet: '#ece6d6' }} />
+      <Furn name="loungeSofa" position={[1.0, 0, num('sofaz', 1.0)]} scale={F * num('sofaesc', 1.25)} rotation-y={Math.PI} tint={{ carpet: '#ece6d6' }} />
       <Furn name="tableCoffee" position={[1.0, 0, 0.5]} scale={F} />
       <Furn name={R('sideTable')} position={[1.0, 0, -0.35]} scale={F * 1.2} />
       <Furn name={R('televisionModern')} position={[1.0, 0.2, -0.36]} scale={F * 1.1} />
@@ -857,10 +857,12 @@ function SetDepto() {
   const cocina = <Persona model={DUENO} escala={ch} sentado={() => 0} pos={() => [0.61, 0, -1.15]} rot={() => [0, Math.PI, 0]} />
   // sillón: sentado con el celular
   const sofa = (
-    <Persona model={DUENO} escala={ch} pos={() => [1.0, 0.1, 1.0]} rot={() => [0, Math.PI, 0]} extra={(h) => {
-      h['arm-right'].rotation.x += -0.6
-      h['arm-left'].rotation.x += -0.6
-      h.head.rotation.x += 0.3
+    <Persona model={DUENO} escala={ch} sentado={() => num('sent', 1)} pos={() => [num('sx', 1.0), num('sy', 0.1), num('sz', 1.0)]} rot={() => [0, Math.PI + num('sr', 0), 0]} extra={(h) => {
+      h['arm-right'].rotation.x += num('brx', -0.6)
+      h['arm-right'].rotation.z += num('brz', 0)
+      h['arm-left'].rotation.x += num('blx', -0.6)
+      h['arm-left'].rotation.z += num('blz', 0)
+      h.head.rotation.x += num('cx', 0.3)
     }} />
   )
   // puerta: camina del living a la puerta y frena
@@ -877,7 +879,8 @@ function SetDepto() {
     sofa: [[0, 1.0, 0.58, -0.05, 1.0, 0.17, 1.0, 34], [fin, 1.0, 0.54, 0.05, 1.0, 0.17, 1.0, 32]],
     puerta: [[0, 2.05, 0.55, 1.15, 0.7, 0.2, 0.25, 36], [num('camina1', 3.0), 1.25, 0.5, 1.5, 2.3, 0.2, 0.5, 36], [num('sube', 4.3), 1.6, 0.6, 1.4, 2.3, 0.22, 0.55, 36], [fin, 2.6, 3.2, 3.2, 0.2, 0, -0.2, 40]],
   }
-  const keys = (camaras[esc] ?? camaras.cama).map(([t, ...v]) => [t, ...v.map((x, i) => (i < 6 ? x * K : x))] as [number, ...number[]])
+  const cam = cfg().cam as [number, ...number[]][] | undefined
+  const keys = (cam ?? camaras[esc] ?? camaras.cama).map(([t, ...v]) => [t, ...v.map((x, i) => (i < 6 ? x * K : x))] as [number, ...number[]])
   return (
     <>
       <color attach="background" args={['#10291f']} />
@@ -890,7 +893,7 @@ function SetDepto() {
           </>
         )}
         {esc === 'cocina' && <>{cocina}<Cafe position={[0.61, 0.285, -1.39]} desde={num('cafe0', 0.4)} /></>}
-        {esc === 'sofa' && <>{sofa}<Celu position={[1.0, 0.22, 0.92]} rotation={[-0.9, 0, 0]} /></>}
+        {esc === 'sofa' && <>{sofa}<Celu position={[num('px', 1.0), num('py', 0.22), num('pz', 0.92)]} rotation={[num('prx', -0.9), num('pry', 0), 0]} escala={num('pesc', 1)} /><pointLight position={[num('px', 1.0), num('py', 0.22) + 0.06, num('pz', 0.92) + 0.03]} color="#9fe8ff" intensity={num('luz', 0)} distance={0.4} decay={2} /></>}
         {esc === 'puerta' && puerta}
       </group>
       <Camara keys={keys} />
