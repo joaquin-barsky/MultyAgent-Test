@@ -8,6 +8,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { SkeletonUtils } from 'three-stdlib'
 import { Furn } from '../three/models'
+import { CurvedMonitor } from '../three/CurvedMonitor'
 
 type V3 = [number, number, number]
 type Cfg = { dur?: number; habla?: [number, number][]; [k: string]: unknown }
@@ -901,7 +902,294 @@ function SetDepto() {
   )
 }
 
-const SETS: Record<string, () => React.ReactElement> = { mora: SetMora, toto: SetToto, simon: SetSimon, lola: SetLola, nacho: SetNacho, depto: SetDepto }
+// ═══════════════ orik-09-en-5-anos: la oficina por áreas (maqueta, zonas, piso sin límite y ciudad) ═══════════════
+// cfg.escena = maqueta | zona | ras | limite | ciudad. Cada área es un bloque modular (piso tintado, pared con su nombre y 4 puestos
+// con agentes que teclean): el nombre y el color salen de la lista, así sirve para cualquier área inventada.
+// cfg.cam (opcional) pisa la cámara: [[t, x, y, z, mirax, miray, miraz, fov], …].
+type Area = { n: string; c: string; tipo?: 'deposito' | 'cafe' }
+const AREAS_09: Area[] = [
+  { n: 'Ventas', c: '#00A991' }, { n: 'Atención al cliente', c: '#2E7DFF' }, { n: 'Marketing', c: '#FF3D9A' },
+  { n: 'Depósito', c: '#F59E0B', tipo: 'deposito' }, { n: 'Finanzas', c: '#3DAE2B' }, { n: '', c: '#c9b48f', tipo: 'cafe' },
+]
+const EXTRAS_09 = ['Legales', 'Logística', 'Posventa', 'Importaciones', 'Calidad', 'Eventos', 'Compras', 'Diseño', 'Soporte', 'Expansión',
+  'Proveedores', 'Capacitación', 'Datos', 'Comunidad', 'Producto', 'Exportación', 'Reservas', 'Mantenimiento', 'Prensa', 'Alianzas',
+  'Franquicias', 'Licitaciones', 'Seguridad', 'Innovación', 'Turnos', 'Cobertura', 'Fidelización', 'Mayoristas', 'E-commerce', 'Sucursales',
+  'Auditoría', 'Investigación', 'Contenidos', 'Agenda', 'Envíos', 'Patentes', 'Viajes', 'Becas', 'Créditos', 'Garantías']
+const PAL_09 = ['#8A5CF6', '#FF5A36', '#14B8A6', '#EAB308', '#06B6D4', '#EC4899', '#84CC16', '#A855F7', '#0EA5E9', '#F97316', '#22C55E', '#E11D48']
+const ZW = 4.6, ZD = 3.8, GAP = 0.34
+const CELDA = (gx: number, gz: number): V3 => [gx * (ZW + GAP), 0, gz * (ZD + GAP)]
+// las 6 primeras celdas: atrás Ventas, Atención y Marketing; adelante Depósito, Finanzas y el café
+const CELDAS_09: [number, number][] = [[-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
+const MODELOS_09 = ['character-female-a', 'character-male-b', 'character-female-c', 'character-male-e', 'character-female-d', 'character-male-a', 'character-female-f', 'character-male-c', 'character-female-b', 'character-male-d', 'character-female-e']
+const mezcla = (a: string, b: string, k: number) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), k).getHexString()
+
+const PANTALLAS_09 = new Map<string, THREE.CanvasTexture>()
+function pantallaArea(c: string, seed: number) {
+  const clave = `${c}:${seed % 3}`
+  if (!PANTALLAS_09.has(clave)) PANTALLAS_09.set(clave, pantallaNueva(c, seed % 3))
+  return PANTALLAS_09.get(clave)!
+}
+function pantallaNueva(c: string, seed: number) {
+  const r = rnd(seed + 1)
+  return lienzo(512, 128, (x) => {
+    x.fillStyle = '#0d1a20'
+    x.fillRect(0, 0, 512, 128)
+    x.fillStyle = c
+    x.fillRect(0, 0, 512, 14)
+    for (let i = 0; i < 6; i++) {
+      x.globalAlpha = 0.85
+      x.fillStyle = i % 3 === 0 ? c : '#e8eef2'
+      redondo(x, 24, 26 + i * 16, 80 + r() * 300, 8, 4)
+      x.fill()
+    }
+    x.globalAlpha = 1
+    x.strokeStyle = c
+    x.lineWidth = 5
+    x.beginPath()
+    for (let i = 0; i <= 8; i++) x.lineTo(380 + i * 15, 110 - i * 9 - r() * 14)
+    x.stroke()
+  })
+}
+function cartelArea(n: string) {
+  return lienzo(768, 150, (x) => {
+    x.fillStyle = '#ffffff'
+    let px = 99
+    x.font = G(600, px)
+    while (x.measureText(n).width > 720 && px > 30) { px -= 3; x.font = G(600, px) }
+    x.textBaseline = 'middle'
+    x.fillText(n, 15, 78)
+  })
+}
+
+/** un puesto: escritorio, monitor curvo con la pantalla del área, silla y un agente que teclea (o vacío, para lo lejano) */
+function Puesto({ c, seed, model, gente }: { c: string; seed: number; model: string; gente: boolean }) {
+  const tx = pantallaArea(c, seed)
+  const ph = seed * 1.7
+  return (
+    <group>
+      <Furn name="desk" scale={[1.5, 1, 1.15]} />
+      <CurvedMonitor content={tx} dark={false} accent={c} />
+      <Furn name="computerKeyboard" position={[0, 0.38, -0.2]} rotation-y={Math.PI} />
+      <Furn name="chairDesk" position={[0, 0, -0.6]} scale={0.75} tint={{ carpet: c }} />
+      {gente && (
+        <Persona model={model} escala={0.62} pos={() => [0, 0.25, -0.6]} extra={(h, t) => {
+          // teclea: los dos brazos al teclado con un golpeteo chico, y la cabeza mira la pantalla
+          h['arm-right'].rotation.x += -1.0 + 0.09 * Math.sin(t * 15 + ph)
+          h['arm-right'].rotation.z += 1.25
+          h['arm-left'].rotation.x += -1.0 + 0.09 * Math.sin(t * 13 + ph + 1)
+          h['arm-left'].rotation.z += -1.25
+          h.head.rotation.x += 0.12
+        }} />
+      )}
+    </group>
+  )
+}
+
+/** un área: bloque con su piso tintado, la pared con el nombre y 4 puestos. aparece = segundo en que salta (para el piso sin límite) */
+function Zona({ a, pos, idx, gente = true, aparece, prende }: { a: Area; pos: V3; idx: number; gente?: boolean; aparece?: number; prende?: number }) {
+  const g = useRef<THREE.Group>(null)
+  const piso = useRef<THREE.MeshStandardMaterial>(null)
+  const cartel = useMemo(() => (a.n ? cartelArea(a.n) : null), [a.n])
+  const base = mezcla('#DCD7CE', a.c, 0.3), fuerte = mezcla('#DCD7CE', a.c, 0.65)
+  useFrame(() => {
+    const t = tiempo()
+    if (g.current) {
+      const k = aparece === undefined ? 1 : ramp(t, aparece, aparece + 0.32)
+      // salta con un rebote chico
+      const s = k <= 0 ? 0.0001 : k >= 1 ? 1 : 1 + 1.7 * Math.pow(k - 1, 3) + 0.7 * Math.pow(k - 1, 2)
+      g.current.scale.setScalar(Math.max(0.0001, s))
+      g.current.position.set(pos[0], pos[1] - (1 - Math.min(1, k)) * 1.2, pos[2])
+      g.current.visible = k > 0
+    }
+    if (piso.current && prende !== undefined) {
+      // se "prende": el piso pasa al color del área y vuelve
+      const p = ramp(t, prende, prende + 0.15) * (1 - ramp(t, prende + 0.5, prende + 1.1))
+      piso.current.color.set(mezcla(base, fuerte, p))
+      piso.current.emissive.set(a.c)
+      piso.current.emissiveIntensity = 0.35 * p
+    }
+  })
+  const puestos: V3[] = [[-1.05, 0.08, -0.15], [1.05, 0.08, -0.15], [-1.05, 0.08, 1.35], [1.05, 0.08, 1.35]]
+  return (
+    <group ref={g} position={pos}>
+      {/* bloque: losa oscura abajo y piso tintado arriba */}
+      <RoundedBox args={[ZW, 0.34, ZD]} radius={0.06} smoothness={2} position={[0, -0.13, 0]} receiveShadow castShadow>
+        <meshStandardMaterial color="#22302b" roughness={0.85} />
+      </RoundedBox>
+      <mesh position={[0, 0.045, 0]} receiveShadow>
+        <boxGeometry args={[ZW - 0.1, 0.02, ZD - 0.1]} />
+        <meshStandardMaterial ref={piso} color={base} roughness={0.92} />
+      </mesh>
+      {a.tipo === 'cafe' ? (
+        <group>
+          <Furn name="kitchenBar" position={[-1.2, 0.055, -1.2]} scale={1.3} />
+          <Furn name="kitchenCoffeeMachine" position={[-1.2, 0.6, -1.25]} scale={1.3} />
+          <Furn name="loungeDesignSofa" position={[0.9, 0.055, 0.9]} rotation-y={Math.PI} scale={1.3} tint={{ carpet: '#1d4636' }} />
+          <Furn name="tableCoffeeGlass" position={[0.9, 0.055, 0.0]} scale={1.3} />
+          <Furn name="pottedPlant" position={[1.85, 0.055, -1.45]} scale={1.6} />
+          <Furn name="pottedPlant" position={[-1.9, 0.055, 1.45]} scale={1.4} />
+          <Furn name="rugRound" position={[0.9, 0.06, 0.5]} scale={1.6} tint={{ carpet: '#c9b48f', carpetDarker: '#b39c74' }} />
+        </group>
+      ) : (
+        <group>
+          {/* pared del fondo, pintada del color del área, con el nombre */}
+          <mesh position={[0, 0.45, -ZD / 2 + 0.12]} castShadow receiveShadow>
+            <boxGeometry args={[ZW - 0.1, 0.8, 0.12]} />
+            <meshStandardMaterial color={a.c} roughness={0.85} />
+          </mesh>
+          {cartel && (
+            <mesh position={[-ZW / 2 + 0.2 + 1.4, 0.58, -ZD / 2 + 0.185]}>
+              <planeGeometry args={[2.8, 0.547]} />
+              <meshBasicMaterial map={cartel} transparent toneMapped={false} />
+            </mesh>
+          )}
+          {a.tipo === 'deposito' && (
+            <group>
+              <Furn name="bookcaseOpen" position={[-1.85, 0.055, -1.35]} scale={1.1} />
+              <Furn name="bookcaseOpen" position={[1.85, 0.055, -1.35]} scale={1.1} />
+              {[[-0.3, 0.055, -1.4, 0.32], [0.12, 0.055, -1.45, 0.26], [-0.08, 0.37, -1.42, 0.22], [2.0, 0.055, 1.9, 0.3]].map(([x, y, z, s], i) => (
+                <RoundedBox key={i} args={[s, s * 0.95, s]} radius={0.01} position={[x, y + s * 0.47, z]} castShadow><meshStandardMaterial color={i % 2 ? '#c99a62' : '#b5844f'} roughness={0.9} /></RoundedBox>
+              ))}
+            </group>
+          )}
+          {puestos.map((p, i) => (
+            <group key={i} position={p}>
+              <Puesto c={a.c} seed={idx * 7 + i} model={MODELOS_09[(idx * 4 + i) % MODELOS_09.length]} gente={gente} />
+            </group>
+          ))}
+        </group>
+      )}
+    </group>
+  )
+}
+
+/** edificio de la ciudad: un modelo del City Kit de Kenney que se "prende" (ventanas cálidas y un aro menta en la terraza) */
+function Edificio({ n, pos, rotY, escala, prende }: { n: string; pos: V3; rotY: number; escala: number; prende: number }) {
+  const { scene } = useGLTF(`/rec/city/${n}.glb`)
+  const { obj, mats, alto } = useMemo(() => {
+    const c = scene.clone(true)
+    const mats: THREE.MeshStandardMaterial[] = []
+    c.traverse((o) => {
+      const m = o as THREE.Mesh
+      if (m.isMesh) {
+        m.castShadow = m.receiveShadow = true
+        const nm = (m.material as THREE.MeshStandardMaterial).clone()
+        nm.emissive = new THREE.Color('#ffcf8a')
+        nm.emissiveMap = nm.map
+        nm.emissiveIntensity = 0
+        m.material = nm
+        mats.push(nm)
+      }
+    })
+    const box = new THREE.Box3().setFromObject(c)
+    return { obj: c, mats, alto: box.max.y }
+  }, [scene])
+  const aro = useRef<THREE.Mesh>(null)
+  useFrame(() => {
+    const t = tiempo()
+    const k = ramp(t, prende, prende + 0.25)
+    for (const m of mats) m.emissiveIntensity = 0.75 * k
+    if (aro.current) {
+      const u = ramp(t, prende, prende + 0.6)
+      aro.current.scale.setScalar(0.4 + 1.2 * u)
+      ;(aro.current.material as THREE.MeshBasicMaterial).opacity = k * (1 - 0.6 * u)
+    }
+  })
+  return (
+    <group position={pos} rotation-y={rotY} scale={escala}>
+      <primitive object={obj} />
+      <mesh ref={aro} position={[0, alto + 0.02, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[0.32, 0.4, 40]} />
+        <meshBasicMaterial color={MENTA} transparent opacity={0} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
+function Ciudad() {
+  const lista = useMemo(() => {
+    const r = rnd(9)
+    const altos = ['building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-c', 'building-skyscraper-d', 'building-skyscraper-e']
+    const bajos = 'abcdefghijklmn'.split('').map((l) => `building-${l}`)
+    const out: { n: string; pos: V3; rotY: number; escala: number; d: number }[] = []
+    const N = 9
+    for (let gx = -N; gx <= N; gx++) for (let gz = -N; gz <= N; gz++) {
+      const d = Math.hypot(gx, gz)
+      const n = gx === 0 && gz === 0 ? 'building-skyscraper-c' : r() < 0.28 + 0.2 * Math.exp(-d / 4) ? altos[Math.floor(r() * altos.length)] : bajos[Math.floor(r() * bajos.length)]
+      out.push({ n, pos: [gx * 2.3 + (r() - 0.5) * 0.3, 0, gz * 2.3 + (r() - 0.5) * 0.3], rotY: Math.floor(r() * 4) * (Math.PI / 2), escala: 1.0 + r() * 0.15, d })
+    }
+    return out
+  }, [])
+  const p0 = num('prende0', 0.4), p1 = num('prende1', 3.6)
+  const maxD = Math.max(...lista.map((b) => b.d))
+  return (
+    <group>
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[120, 120]} />
+        <meshStandardMaterial color="#1a2b33" roughness={0.95} />
+      </mesh>
+      {lista.map((b, i) => (
+        // se prenden del centro hacia afuera, cada vez más rápido
+        <Edificio key={i} n={b.n} pos={b.pos} rotY={b.rotY} escala={b.escala} prende={p0 + (p1 - p0) * Math.pow(b.d / maxD, 0.7)} />
+      ))}
+    </group>
+  )
+}
+
+function SetOficina() {
+  const esc = (cfg().escena as string) ?? 'maqueta'
+  const fin = num('dur', 5)
+  const { camera } = useThree()
+  useEffect(() => {
+    const c = camera as THREE.PerspectiveCamera
+    c.far = 600
+    c.updateProjectionMatrix()
+  }, [camera])
+  const area = num('area', 0)
+  const [ax, , az] = CELDA(...CELDAS_09[area])
+  // las áreas extra del piso sin límite: celdas ordenadas por distancia al centro, saltan cada vez más rápido
+  const extras = useMemo(() => {
+    const ocupadas = new Set(CELDAS_09.map(([x, z]) => `${x},${z}`))
+    const celdas: [number, number][] = []
+    for (let x = -9; x <= 9; x++) for (let z = -8; z <= 9; z++) if (!ocupadas.has(`${x},${z}`)) celdas.push([x, z])
+    celdas.sort((p, q) => Math.hypot(p[0], p[1] - 0.5) - Math.hypot(q[0], q[1] - 0.5))
+    return celdas.slice(0, num('cuantas', 120))
+  }, [])
+  const l0 = num('limite0', 0.3), l1 = num('limite1', 4.2)
+  const prendeZona = (i: number) => (esc === 'maqueta' ? num('prende0', 3.6) + i * num('prendeCada', 0.32) : undefined)
+  const def: Record<string, [number, ...number[]][]> = {
+    maqueta: [[0, 9.5, 8.5, 13.5, 0, 0, 1.4, 34], [3.4, -2.5, 9, 14.5, 0, 0, 1.4, 34], [fin, 1.5, 5.2, 7.4, 0, 0.3, 1.2, 38]],
+    zona: [[0, ax - 1.0, 4.6, az + 7.0, ax - 0.3, 1.3, az + 0.1, 42], [fin, ax + 1.0, 4.3, az + 6.6, ax + 0.3, 1.3, az + 0.1, 40]],
+    ras: [[0, -6.5, 4.4, 4.6, -5.2, 0.6, -0.2, 38], [fin, 6.5, 4.2, 4.4, 5.2, 0.6, -0.2, 38]],
+    limite: [[0, 0, 7, 12, 0, 0, 1.5, 40], [fin * 0.55, 0, 22, 26, 0, 0, 2, 44], [fin, 0, 60, 52, 0, 0, 2, 48]],
+    ciudad: [[0, 2.2, 7.8, 3.2, 0, 6.2, 0, 42], [fin * 0.45, 7, 16, 16, 0, 3, 0, 44], [fin, 16, 40, 44, 0, 0, 0, 46]],
+  }
+  const keys = (cfg().cam as [number, ...number[]][] | undefined) ?? def[esc] ?? def.maqueta
+  const ciudad = esc === 'ciudad'
+  return (
+    <>
+      <color attach="background" args={[ciudad ? '#0e1d24' : VERDE]} />
+      {ciudad && <fog attach="fog" args={['#0e1d24', 40, 110]} />}
+      <hemisphereLight args={[ciudad ? '#7b8fb0' : '#f2f6ff', ciudad ? '#20262c' : '#5a5040', ciudad ? 0.55 : 1.1]} />
+      <directionalLight position={ciudad ? [-20, 25, -12] : [-6, 12, 8]} intensity={ciudad ? 1.1 : 2.3} color={ciudad ? '#ff9e6b' : '#fff0dc'} castShadow
+        shadow-mapSize={[4096, 4096]} shadow-bias={-0.0006} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={120} />
+      <directionalLight position={[8, 6, 10]} intensity={ciudad ? 0.25 : 0.55} color="#e6f0ff" />
+      {ciudad ? <Ciudad /> : (
+        <group>
+          {/* en los primeros planos se dibuja solo esa área (así no aparece el cartel de otra); en la de ras, sin la fila de adelante */}
+          {AREAS_09.map((a, i) => ((esc === 'zona' && i !== area) || (esc === 'ras' && CELDAS_09[i][1] > 0) ? null : <Zona key={i} a={a} idx={i} pos={CELDA(...CELDAS_09[i])} prende={prendeZona(i)} />))}
+          {esc === 'limite' && extras.map(([x, z], i) => (
+            <Zona key={`e${i}`} idx={10 + i} a={{ n: EXTRAS_09[i % EXTRAS_09.length], c: PAL_09[i % PAL_09.length] }} pos={CELDA(x, z)} gente={i < 6}
+              aparece={l0 + (l1 - l0) * Math.pow(i / extras.length, 0.55)} />
+          ))}
+        </group>
+      )}
+      <Camara keys={keys} />
+    </>
+  )
+}
+
+const SETS: Record<string, () => React.ReactElement> = { mora: SetMora, toto: SetToto, simon: SetSimon, lola: SetLola, nacho: SetNacho, depto: SetDepto, oficina: SetOficina }
 
 function Listo() {
   useEffect(() => {
