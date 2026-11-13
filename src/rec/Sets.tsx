@@ -97,8 +97,8 @@ function redondo(c: CanvasRenderingContext2D, x: number, y: number, w: number, h
 }
 
 // ─── personaje: sentado (o pasando de parado a sentado), cabeza viva cuando habla ───
-function Persona({ model, sentado = () => 1, pos, rotY = 0, escala = 0.62, extra }: {
-  model: string; sentado?: (t: number) => number; pos: (t: number) => V3; rotY?: number; escala?: number
+function Persona({ model, sentado = () => 1, camina = () => 0, pos, rotY = 0, rot, escala = 0.62, extra }: {
+  model: string; sentado?: (t: number) => number; camina?: (t: number) => number; pos: (t: number) => V3; rotY?: number; rot?: (t: number) => V3; escala?: number
   extra?: (huesos: Record<string, THREE.Object3D>, t: number) => void
 }) {
   const { scene, animations } = useGLTF(`/models/chars/${model}.glb`)
@@ -110,24 +110,27 @@ function Persona({ model, sentado = () => 1, pos, rotY = 0, escala = 0.62, extra
     })
     return c
   }, [scene])
-  const { mixer, sit, idle, huesos, base } = useMemo(() => {
+  const { mixer, sit, idle, walk, huesos, base } = useMemo(() => {
     const mixer = new THREE.AnimationMixer(obj)
     const sit = mixer.clipAction(animations.find((a) => a.name === 'sit')!)
     const idle = mixer.clipAction(animations.find((a) => a.name === 'idle')!)
+    const walk = mixer.clipAction(animations.find((a) => a.name === 'walk')!)
     sit.play()
     idle.play()
+    walk.play()
     const huesos: Record<string, THREE.Object3D> = {}
     for (const n of ['head', 'torso', 'arm-left', 'arm-right', 'leg-left', 'leg-right']) huesos[n] = obj.getObjectByName(n)!
     // los clips no mueven todos los huesos: antes de cada cuadro vuelven a su pose de base (si no, los giros se acumulan)
     const base = Object.fromEntries(Object.entries(huesos).map(([k, o]) => [k, o.quaternion.clone()]))
-    return { mixer, sit, idle, huesos, base }
+    return { mixer, sit, idle, walk, huesos, base }
   }, [obj, animations])
   const g = useRef<THREE.Group>(null)
   useFrame(() => {
     const t = tiempo()
-    const w = sentado(t)
+    const w = sentado(t), c = camina(t)
     sit.setEffectiveWeight(w)
-    idle.setEffectiveWeight(1 - w)
+    walk.setEffectiveWeight(c)
+    idle.setEffectiveWeight(Math.max(0, 1 - w - c))
     for (const k in huesos) huesos[k].quaternion.copy(base[k])
     mixer.setTime(t)
     const k = hablando(t)
@@ -138,6 +141,7 @@ function Persona({ model, sentado = () => 1, pos, rotY = 0, escala = 0.62, extra
     huesos.torso.rotation.y += 0.02 * Math.sin(t * 0.9)
     extra?.(huesos, t)
     g.current?.position.set(...pos(t))
+    if (rot && g.current) g.current.rotation.set(...rot(t))
   })
   return (
     <group ref={g} rotation-y={rotY} scale={escala}>
@@ -714,7 +718,187 @@ function SetNacho() {
   )
 }
 
-const SETS: Record<string, () => React.ReactElement> = { mora: SetMora, toto: SetToto, simon: SetSimon, lola: SetLola, nacho: SetNacho }
+// ═══════════════ orik-06-jarvis: el departamento del dueño (cama, cocina, sillón, puerta) ═══════════════
+// cfg.escena = cama | cocina | sofa | puerta. Muebles del Furniture Kit de Kenney (CC0) a escala F; el dueño es el muñeco de traje.
+const F = 0.6
+const R = (n: string) => `../../rec/furn/${n}`
+const DUENO = 'character-male-d'
+const CH = 0.6 // escala del muñeco (la misma que los muebles)
+function texturaDigital(txt: string) {
+  return lienzo(256, 128, (c) => {
+    c.fillStyle = '#05080a'
+    c.fillRect(0, 0, 256, 128)
+    c.fillStyle = '#8be9ff'
+    c.shadowColor = '#8be9ff'
+    c.shadowBlur = 14
+    c.font = G(600, 84)
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.fillText(txt, 128, 68)
+  })
+}
+function Despertador({ position }: { position: V3 }) {
+  const tx = useMemo(() => texturaDigital('7:00'), [])
+  const pant = useRef<THREE.MeshStandardMaterial>(null)
+  useFrame(() => {
+    // titila mientras suena (los primeros 1,6 s)
+    const t = tiempo()
+    if (pant.current) pant.current.emissiveIntensity = t < 1.6 ? (Math.sin(t * 18) > -0.3 ? 2.2 : 0.6) : 1.6
+  })
+  return (
+    <group position={position} rotation-y={0.5}>
+      <RoundedBox args={[0.11, 0.06, 0.05]} radius={0.01} smoothness={2} position={[0, 0.03, 0]} castShadow><meshStandardMaterial color="#e9e6df" roughness={0.4} /></RoundedBox>
+      <mesh position={[0, 0.032, 0.0255]}><planeGeometry args={[0.092, 0.044]} /><meshStandardMaterial ref={pant} color="#000" emissive="#ffffff" emissiveMap={tx} emissiveIntensity={1.6} /></mesh>
+    </group>
+  )
+}
+function Cafe({ position, desde }: { position: V3; desde: number }) {
+  const chorro = useRef<THREE.Mesh>(null)
+  const nivel = useRef<THREE.Mesh>(null)
+  const vapor = useRef<(THREE.Mesh | null)[]>([])
+  useFrame(() => {
+    const t = tiempo()
+    const k = ramp(t, desde, desde + 2.6)
+    if (chorro.current) chorro.current.visible = t > desde && k < 1
+    if (nivel.current) {
+      nivel.current.scale.y = Math.max(0.01, k)
+      nivel.current.position.y = 0.006 + 0.02 * k
+    }
+    vapor.current.forEach((v, i) => {
+      if (!v) return
+      const u = (t * 0.5 + i / 4) % 1
+      v.position.set(Math.sin(t * 2 + i) * 0.008, 0.05 + u * 0.09, 0)
+      ;(v.material as THREE.MeshBasicMaterial).opacity = 0.22 * Math.sin(u * Math.PI) * ramp(t, desde + 0.5, desde + 1.5)
+      v.scale.setScalar(0.6 + u)
+    })
+  })
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.022, 0]} castShadow><cylinderGeometry args={[0.024, 0.02, 0.045, 24, 1, true]} /><meshStandardMaterial color="#f4f1ea" roughness={0.35} side={THREE.DoubleSide} /></mesh>
+      <mesh position={[0, 0.001, 0]}><cylinderGeometry args={[0.02, 0.02, 0.002, 24]} /><meshStandardMaterial color="#f4f1ea" /></mesh>
+      <mesh ref={nivel} position={[0, 0.006, 0]}><cylinderGeometry args={[0.021, 0.019, 0.04, 24]} /><meshStandardMaterial color="#3b2216" roughness={0.2} /></mesh>
+      <mesh ref={chorro} position={[0, 0.07, 0]}><cylinderGeometry args={[0.0025, 0.0025, 0.07, 8]} /><meshStandardMaterial color="#4a2a18" roughness={0.2} /></mesh>
+      {[0, 1, 2, 3].map((i) => (
+        <mesh key={i} ref={(el) => { vapor.current[i] = el }}><sphereGeometry args={[0.012, 10, 10]} /><meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} /></mesh>
+      ))}
+    </group>
+  )
+}
+function Celu({ position, rotation }: { position: V3; rotation: V3 }) {
+  return (
+    <group position={position} rotation={rotation}>
+      <RoundedBox args={[0.035, 0.07, 0.005]} radius={0.003} smoothness={2}><meshStandardMaterial color="#111" /></RoundedBox>
+      <mesh position={[0, 0, 0.0027]}><planeGeometry args={[0.031, 0.064]} /><meshStandardMaterial color="#000" emissive="#9fe8ff" emissiveIntensity={1.2} /></mesh>
+    </group>
+  )
+}
+/** el departamento: piso de madera, paredes con ventanas, dormitorio, cocina, living y la puerta */
+function Depto() {
+  const madera = useMemo(texturaMadera, [])
+  return (
+    <group>
+      <mesh rotation-x={-Math.PI / 2} receiveShadow><planeGeometry args={[5.4, 3.6]} /><meshStandardMaterial map={madera} roughness={0.7} color="#d9b48c" /></mesh>
+      <mesh position={[0, 0.7, -1.6]} receiveShadow><planeGeometry args={[5.4, 1.4]} /><meshStandardMaterial color="#f1e9d8" roughness={0.95} /></mesh>
+      <mesh position={[-2.7, 0.7, 0.2]} rotation-y={Math.PI / 2} receiveShadow><planeGeometry args={[3.6, 1.4]} /><meshStandardMaterial color="#e6dcc6" roughness={0.95} /></mesh>
+      <mesh position={[2.7, 0.7, 0.2]} rotation-y={-Math.PI / 2} receiveShadow><planeGeometry args={[3.6, 1.4]} /><meshStandardMaterial color="#e6dcc6" roughness={0.95} /></mesh>
+      <Furn name="wallWindow" position={[-1.85, 0.0, -1.585]} scale={F * 1.05} />
+      <Furn name="wallWindow" position={[-0.55, 0.0, -1.585]} scale={F * 1.05} />
+      {/* dormitorio */}
+      <Furn name={R('bedDouble')} position={[-1.85, 0, -0.95]} scale={F * 0.75} tint={{ carpet: '#2f5a4a', carpetWhite: '#f3efe6' }} />
+      <Furn name={R('cabinetBedDrawerTable')} position={[-1.2, 0, -1.4]} scale={F * 1.2} />
+      <Furn name={R('lampRoundTable')} position={[-1.25, 0.19, -1.45]} scale={F} tint={{ lamp: 'glow:#ffd9a8' }} />
+      <Despertador position={[-1.12, 0.188, -1.33]} />
+      <Furn name="rugRounded" position={[-1.85, 0.002, -0.1]} scale={F * 1.3} tint={{ carpet: '#c9b48f' }} />
+      {/* cocina */}
+      {[0.35, 0.61, 0.87, 1.13].map((x, i) => <Furn key={i} name={R('kitchenCabinet')} position={[x, 0, -1.45]} scale={F} />)}
+      {[0.35, 0.61, 1.13].map((x, i) => <Furn key={i} name={R('kitchenCabinetUpper')} position={[x, 0.55, -1.5]} scale={F} />)}
+      <Furn name="kitchenCoffeeMachine" position={[0.61, 0.27, -1.47]} scale={F * 0.8} />
+      <Furn name={R('kitchenFridgeLarge')} position={[1.62, 0, -1.4]} scale={F} />
+      <Furn name="plantSmall2" position={[1.13, 0.27, -1.47]} scale={F * 1.1} />
+      {/* living */}
+      <Furn name="rugRound" position={[1.0, 0.002, 0.45]} scale={F * 1.6} tint={{ carpet: '#2f5a4a', carpetDarker: '#244a3c' }} />
+      <Furn name="loungeSofa" position={[1.0, 0, 1.0]} scale={F * 1.25} rotation-y={Math.PI} tint={{ carpet: '#ece6d6' }} />
+      <Furn name="tableCoffee" position={[1.0, 0, 0.5]} scale={F} />
+      <Furn name={R('sideTable')} position={[1.0, 0, -0.35]} scale={F * 1.2} />
+      <Furn name={R('televisionModern')} position={[1.0, 0.2, -0.36]} scale={F * 1.1} />
+      <Furn name="pottedPlant" position={[2.4, 0, -1.3]} scale={F * 1.4} />
+      <Furn name="bookcaseOpenLow" position={[-0.5, 0, 1.4]} scale={F} rotation-y={Math.PI} />
+      {/* puerta de salida, en la pared derecha */}
+      <Furn name={R('doorwayFront')} position={[2.69, 0, 0.55]} scale={F * 1.25} rotation-y={-Math.PI / 2} />
+      <Furn name={R('coatRackStanding')} position={[2.45, 0, 1.15]} scale={F} />
+    </group>
+  )
+}
+function LucesManana() {
+  return (
+    <>
+      <hemisphereLight args={['#eef6ff', '#7a6450', 1.05]} />
+      <directionalLight position={[-2.5, 3.2, -4]} intensity={2.4} color="#ffe2b8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0008}
+        shadow-camera-left={-4} shadow-camera-right={4} shadow-camera-top={4} shadow-camera-bottom={-4} />
+      <directionalLight position={[3, 2.5, 4]} intensity={0.5} color="#e8f1ff" />
+    </>
+  )
+}
+function SetDepto() {
+  const esc = (cfg().escena as string) ?? 'cama'
+  const fin = num('dur', 5)
+  // todo el departamento va ×K alrededor del muñeco (los muebles de Kenney vienen más chicos que los muñecos);
+  // adentro del grupo el muñeco va a CH/K. Las cámaras se escriben en las medidas de adentro y se multiplican por K.
+  const K = 1.25, ch = CH / K
+  // cama: acostado (la cabeza en la almohada), se sienta después de "Son las 7"
+  const s0 = num('sienta0', 2.6), s1 = num('sienta1', 3.5)
+  const sube = (t: number) => suave(ramp(t, s0, s1))
+  const cama = (
+    <Persona model={DUENO} escala={ch} sentado={sube}
+      pos={(t) => [-1.85, 0.155 - 0.05 * sube(t), -0.96 - 0.22 * sube(t)]}
+      rot={(t) => [(-Math.PI / 2) * (1 - sube(t)), 0, 0]} />
+  )
+  // cocina: parado frente a la cafetera
+  const cocina = <Persona model={DUENO} escala={ch} sentado={() => 0} pos={() => [0.61, 0, -1.15]} rot={() => [0, Math.PI, 0]} />
+  // sillón: sentado con el celular
+  const sofa = (
+    <Persona model={DUENO} escala={ch} pos={() => [1.0, 0.1, 1.0]} rot={() => [0, Math.PI, 0]} extra={(h) => {
+      h['arm-right'].rotation.x += -0.6
+      h['arm-left'].rotation.x += -0.6
+      h.head.rotation.x += 0.3
+    }} />
+  )
+  // puerta: camina del living a la puerta y frena
+  const c0 = num('camina0', 0.2), c1 = num('camina1', 2.6)
+  const puerta = (
+    <Persona model={DUENO} escala={ch} sentado={() => 0}
+      camina={(t) => (t > c0 - 0.15 && t < c1 + 0.1 ? Math.min(1, ramp(t, c0 - 0.15, c0 + 0.1)) * (1 - ramp(t, c1 - 0.15, c1 + 0.1)) : 0)}
+      pos={(t) => { const k = ramp(t, c0, c1); return [0.3 + 1.95 * k, 0, 0.15 + 0.4 * k] }}
+      rot={(t) => [0, Math.PI / 2 - 0.2 * (1 - ramp(t, c0, c1)), 0]} />
+  )
+  const camaras: Record<string, [number, ...number[]][]> = {
+    cama: [[0, -1.0, 0.25, -1.04, -1.13, 0.215, -1.33, 30], [1.0, -1.02, 0.3, -0.95, -1.2, 0.21, -1.3, 32], [2.0, -0.95, 0.85, 0.15, -1.7, 0.12, -1.0, 36], [fin, -1.05, 0.72, 0.0, -1.75, 0.15, -1.05, 34]],
+    cocina: [[0, 1.6, 0.85, -0.05, 0.68, 0.2, -1.2, 34], [fin, 1.45, 0.75, -0.25, 0.66, 0.22, -1.22, 32]],
+    sofa: [[0, 1.0, 0.58, -0.05, 1.0, 0.17, 1.0, 34], [fin, 1.0, 0.54, 0.05, 1.0, 0.17, 1.0, 32]],
+    puerta: [[0, 2.05, 0.55, 1.15, 0.7, 0.2, 0.25, 36], [num('camina1', 3.0), 1.25, 0.5, 1.5, 2.3, 0.2, 0.5, 36], [num('sube', 4.3), 1.6, 0.6, 1.4, 2.3, 0.22, 0.55, 36], [fin, 2.6, 3.2, 3.2, 0.2, 0, -0.2, 40]],
+  }
+  const keys = (camaras[esc] ?? camaras.cama).map(([t, ...v]) => [t, ...v.map((x, i) => (i < 6 ? x * K : x))] as [number, ...number[]])
+  return (
+    <>
+      <color attach="background" args={['#10291f']} />
+      <LucesManana />
+      <group scale={K}>
+        <Depto />
+        {esc === 'cama' && (
+          <>
+            {cama}
+          </>
+        )}
+        {esc === 'cocina' && <>{cocina}<Cafe position={[0.61, 0.285, -1.39]} desde={num('cafe0', 0.4)} /></>}
+        {esc === 'sofa' && <>{sofa}<Celu position={[1.0, 0.22, 0.92]} rotation={[-0.9, 0, 0]} /></>}
+        {esc === 'puerta' && puerta}
+      </group>
+      <Camara keys={keys} />
+    </>
+  )
+}
+
+const SETS: Record<string, () => React.ReactElement> = { mora: SetMora, toto: SetToto, simon: SetSimon, lola: SetLola, nacho: SetNacho, depto: SetDepto }
 
 function Listo() {
   useEffect(() => {

@@ -2,6 +2,8 @@
 // node rec.mjs [nombre1,nombre2]  (sin argumentos graba todas)
 import puppeteer from 'puppeteer-core'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { SHOTS } from './shots.mjs'
 
@@ -10,7 +12,7 @@ const OUT = 'tomas'
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const launch = () => puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, userDataDir: 'prof', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--hide-scrollbars'] })
+const launch = () => puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, userDataDir: path.join(os.tmpdir(), 'orik-rec'), args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--hide-scrollbars'] })
 
 for (const s of SHOTS) {
   if (only && !only.includes(s.n)) continue
@@ -18,7 +20,7 @@ for (const s of SHOTS) {
   const p = await b.newPage()
   await p.setViewport({ width: 540, height: 960, deviceScaleFactor: 2 })
   const [p0, t0] = s.keys[0]
-  await p.goto(`http://localhost:5191/?rec&v=1&${s.q}&cam=${[...p0, ...t0].join(',')}`, { waitUntil: 'networkidle2' })
+  await p.goto(`http://localhost:5191/?rec&v=1&${s.q}&cam=${[...p0, ...t0].join(',')}`, { waitUntil: 'load', timeout: 120000 })
   await p.waitForFunction(() => !!window.__cc, { timeout: 30000 })
   await sleep(s.settle ?? 4000)
 

@@ -18,5 +18,7 @@ export const SHOTS = [
   { n: '09_reloj_amanecer', q: 'hora=amanecer', dur: 4, keys: reloj },
   { n: '10_bruno', q: `${N}&piso=direccion`, dur: 3, keys: [[[4.7, 11.9, 2.4], [3.25, 10.4, -0.1]], [[4.35, 11.65, 1.95], [3.25, 10.4, -0.1]]] },
   { n: '11_rolo_pantalla', q: `${N}&piso=marketing`, dur: 3, keys: [[[3.2, 8.8, -2.95], [2.6, 8.1, -0.9]], [[2.95, 8.7, -2.6], [2.6, 8.1, -0.9]]] },
+  // orik-06-jarvis (12/11): de día, arranca adentro del piso de Ventas y se aleja hasta ver los 5 pisos trabajando
+  { n: '20_equipo_dia', q: 'hora=dia', dur: 6, settle: 1500, keys: [[[7.5, 4.2, 10.5], [0, 4.6, 0]], [[13, 7.5, 18], [0, 5.4, 0]], [[20, 12.5, 28], [0, 6.2, 0]]] },
   { n: '12_final_loop', q: N, dur: 4, keys: [[[15, 10.5, 21], [0, 6.2, 0]], [[30, 34, 42], [0, 8, 0]]] },
 ]
