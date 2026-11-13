@@ -590,10 +590,17 @@ function Cartel() {
     c.fillText('humanos', 56, 372)
   }), [])
   return (
-    <mesh position={[0, 0.2, 0.118]}>
-      <planeGeometry args={[0.4, 0.297]} />
-      <meshStandardMaterial map={tx} roughness={0.7} emissive="#ffffff" emissiveMap={tx} emissiveIntensity={0.12} />
-    </mesh>
+    // cartelito de escritorio (tipo carpa) al costado, a la altura del pecho: se lee en el medio del cuadro, lejos de los subtítulos
+    <group position={[0.27, 0.383, 0.05]} rotation-y={-0.12}>
+      <mesh position={[0, 0.085, 0.012]} rotation-x={-0.22}>
+        <planeGeometry args={[0.24, 0.178]} />
+        <meshStandardMaterial map={tx} roughness={0.7} emissive="#ffffff" emissiveMap={tx} emissiveIntensity={0.15} />
+      </mesh>
+      <mesh position={[0, 0.085, -0.012]} rotation-x={0.22}>
+        <planeGeometry args={[0.24, 0.178]} />
+        <meshStandardMaterial color={VERDE} roughness={0.8} />
+      </mesh>
+    </group>
   )
 }
 function SetLola() {
@@ -617,17 +624,17 @@ function SetLola() {
       ))}
       <group>
         <Furn name="desk" scale={[1.5, 1, 1.15]} />
-        {/* frente del escritorio con el cartel */}
+        {/* frente del escritorio */}
         <mesh position={[0, 0.2, 0.1]}><boxGeometry args={[1.06, 0.34, 0.012]} /><meshStandardMaterial color="#1d4636" roughness={0.8} /></mesh>
         <Cartel />
         <Furn name="chairDesk" position={[0, 0, -0.6]} scale={0.75} tint={{ carpet: '#c9b48f' }} />
-        <Furn name="plantSmall2" position={[0.42, 0.38, -0.12]} scale={1} />
+        <Furn name="plantSmall2" position={[-0.42, 0.38, -0.12]} scale={1} />
         <Persona model="character-female-d" pos={() => [0, 0.25, -0.6]} />
       </group>
       <Camara keys={[
         [0, 0, 0.66, 0.3, 0, 0.5, -0.6, 32],
-        [fin * 0.3, 0, 0.98, 0.95, 0, 0.32, -0.5, 32],
-        [fin * 0.62, 0, 1.5, 2.4, 0, 0.2, -0.3, 34],
+        [fin * 0.3, 0, 0.6, 1.0, 0, 0.42, -0.6, 32],
+        [fin * 0.62, 0, 0.78, 2.3, 0, 0.3, -0.4, 34],
         [fin, 0, 6.5, 12, 0, 0.2, -1.5, 38],
       ]} />
     </>
