@@ -1,1 +1,3 @@
-{}
+{
+  "rewrites": [{ "source": "/:version(v\\d+)", "destination": "/index.html" }]
+}

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProgress } from '@react-three/drei'
-import { ArrowLeft, ChevronDown, ChevronUp, X, Moon, Sun } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, X, Moon, Sun, Minus } from 'lucide-react'
 import { AGENTS, AGENT_BY_ID, FLOORS, agentsOn, type Agent } from './data/agents'
 import { currentStep, runProgress, useCrew } from './sim/store'
 import { useDaylight } from './sim/daylight'
@@ -10,6 +10,8 @@ import { useIsNarrow } from './ui/useIsNarrow'
 import { ShowcasePanel } from './ui/ShowcasePanel'
 import { DayReplay } from './ui/DayReplay'
 import { TaskBoard } from './ui/TaskBoard'
+import { VersionPicker } from './ui/VersionPicker'
+import { SHOW, VERSION } from './sim/mode'
 
 const BuildingScene = lazy(() => import('./scenes/BuildingScene'))
 const OpenPlanScene = lazy(() => import('./scenes/OpenPlanScene'))
@@ -92,6 +94,8 @@ export default function App() {
     u.searchParams.set('v', String(n))
     history.replaceState(null, '', u)
   }
+  // en la vidriera la oficina sale de la dirección: /v1 planta libre, /v2 edificio
+  const open = SHOW ? VERSION !== 2 : v === 2
   const night = useCrew((s) => s.night)
   const { light, clock } = useDaylight(night)
   const floor = useCrew((s) => s.floor)
@@ -121,17 +125,19 @@ export default function App() {
   return (
     <div className="stage relative h-dvh w-full overflow-hidden" data-cinema={showcase ? '' : undefined} style={{ background: focusBg ?? light.sky }}>
       <Suspense fallback={null}>
-        {v === 2 ? <OpenPlanScene light={light} /> : <BuildingScene style="vidrio" light={light} />}
+        {open ? <OpenPlanScene light={light} /> : <BuildingScene style="vidrio" light={light} />}
       </Suspense>
       <ModelProgress />
-      <TopBar clock={clock} phase={light.label} />
-      <FloorBar label={v === 2 ? 'Toda la oficina' : 'Edificio'} />
-      <VariantSwitch v={v} onPick={pickV} />
+      {SHOW ? <VersionPicker /> : <TopBar clock={clock} phase={light.label} />}
+      <FloorBar label={open ? 'Toda la oficina' : 'Edificio'} linear={SHOW && open} />
+      {!SHOW && <VariantSwitch v={v} onPick={pickV} />}
       <ShowcasePanel />
-      <DayReplay />
-      <TaskBoard />
+      {!SHOW && <DayReplay />}
+      {!SHOW && <TaskBoard />}
 
-      {!narrow ? (
+      {SHOW && !narrow ? (
+        <BrunoDock />
+      ) : !narrow ? (
         <>
           <aside className="cine-hide pointer-events-none absolute bottom-4 right-4 top-[92px] z-10 flex w-[350px] flex-col">
             <RightPanel />
@@ -279,13 +285,19 @@ function VariantSwitch({ v, onPick }: { v: 1 | 2; onPick: (n: 1 | 2) => void }) 
   )
 }
 
-function FloorBar({ label }: { label: string }) {
+/** linear: en la planta libre de la vidriera no hay pisos, las flechas pasan de un área a la otra */
+function FloorBar({ label, linear = false }: { label: string; linear?: boolean }) {
   const floor = useCrew((s) => s.floor)
   const setFloor = useCrew((s) => s.setFloor)
   const f = FLOORS.find((x) => x.id === floor)
+  const idx = FLOORS.findIndex((x) => x.id === floor)
+  const neighbor = (dir: 1 | -1) => {
+    if (!f) return undefined
+    if (linear) return FLOORS[idx - dir]
+    return FLOORS.find((x) => x.n === f.n + dir && (x.tower ?? 0) === (f.tower ?? 0))
+  }
   const go = (dir: 1 | -1) => {
-    if (!f) return
-    const next = FLOORS.find((x) => x.n === f.n + dir)
+    const next = neighbor(dir)
     if (next) setFloor(next.id)
   }
   // flechas del teclado para subir y bajar, Escape para volver al edificio
@@ -314,13 +326,13 @@ function FloorBar({ label }: { label: string }) {
             <button onClick={() => setFloor(null)} className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--ink)] px-3.5 text-[13.5px] font-semibold text-[var(--bg)]">
               <ArrowLeft size={15} /> {label}
             </button>
-            <span className="grid size-7 place-items-center rounded-full text-[12px] font-bold text-white" style={{ background: f.tint }}>{f.n}</span>
+            <span className="grid size-7 place-items-center rounded-full text-[12px] font-bold text-white" style={{ background: f.tint }}>{linear ? idx + 1 : f.n}</span>
             <span className="min-w-[104px] text-[14.5px] font-semibold">{f.name}</span>
             <span className="flex gap-1">
-              <button onClick={() => go(-1)} disabled={f.n === 1} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Bajar un piso">
+              <button onClick={() => go(-1)} disabled={!neighbor(-1)} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Bajar un piso">
                 <ChevronDown size={17} />
               </button>
-              <button onClick={() => go(1)} disabled={f.n === FLOORS.length} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Subir un piso">
+              <button onClick={() => go(1)} disabled={!neighbor(1)} className="grid size-9 place-items-center rounded-full bg-[var(--line)] disabled:opacity-35" aria-label="Subir un piso">
                 <ChevronUp size={17} />
               </button>
             </span>
@@ -443,19 +455,67 @@ function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange
   )
 }
 
-function RightPanel() {
+function RightPanel({ onMin }: { onMin?: () => void }) {
   const [tab, setTab] = useState<'bruno' | 'actividad'>('bruno')
   const unread = useChat((s) => s.unread)
   return (
     <div className="glass pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 rounded-[26px] p-3">
       <div className="flex items-center justify-between px-1">
         <SupervisorHeader />
+        {onMin && (
+          <button onClick={onMin} className="ibtn" aria-label="Minimizar el chat">
+            <Minus size={18} />
+          </button>
+        )}
       </div>
       <Tabs value={tab} onChange={setTab} items={[{ id: 'bruno', label: unread ? `Preguntarle (${unread})` : 'Preguntarle' }, { id: 'actividad', label: 'Actividad' }]} />
       <div className="min-h-0 flex-1">
         {tab === 'bruno' ? <SupervisorChat /> : <div className="noscroll h-full overflow-y-auto"><FeedList /></div>}
       </div>
     </div>
+  )
+}
+
+/** vidriera: el chat de Bruno se puede minimizar a un botón, así la pantalla queda limpia */
+function BrunoDock() {
+  const dock = useCrew((s) => s.dock)
+  const setDock = useCrew((s) => s.setDock)
+  const unread = useChat((s) => s.unread)
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {dock ? (
+        <motion.aside
+          key="abierto"
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 24 }}
+          transition={{ duration: 0.22 }}
+          className="cine-hide pointer-events-none absolute bottom-4 right-4 top-4 z-10 flex w-[350px] flex-col"
+        >
+          <RightPanel onMin={() => setDock(false)} />
+        </motion.aside>
+      ) : (
+        <motion.button
+          key="cerrado"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.18 }}
+          onClick={() => setDock(true)}
+          className="cine-hide glass pointer-events-auto absolute bottom-4 right-4 z-10 flex h-[60px] items-center gap-3 rounded-[22px] pl-2 pr-5"
+          aria-label="Abrir el chat con Bruno"
+        >
+          <span className="relative">
+            <img src="/avatars/face-character-male-e.png" alt="" className="size-11 rounded-[15px] bg-[#E4E9F0] object-cover" />
+            {unread > 0 && <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-[var(--accent)] text-[11px] font-bold text-white">{unread}</span>}
+          </span>
+          <span className="flex flex-col items-start leading-tight">
+            <span className="text-[15px] font-bold">Bruno</span>
+            <span className="text-[12px] text-[var(--muted)]">Preguntale lo que quieras</span>
+          </span>
+        </motion.button>
+      )}
+    </AnimatePresence>
   )
 }
 

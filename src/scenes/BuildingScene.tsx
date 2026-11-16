@@ -13,6 +13,7 @@ import { CurvedMonitor } from '../three/CurvedMonitor'
 import { cancelIntro, introFly, introPending } from './intro'
 import { StatusBoard } from '../three/StatusBoard'
 import { REC } from '../sim/rec'
+import { SHOW } from '../sim/mode'
 
 export type BuildingStyle = 'vidrio'
 
@@ -21,6 +22,11 @@ const D = 8.4
 const H = 2.4
 const BASE = 0.35
 const floorY = (n: number) => BASE + (n - 1) * H
+// en la vidriera son dos torres pegadas (4 pisos cada una); en la demo, una sola
+const TOWERS = SHOW ? 2 : 1
+const GAP = 0.5
+const towerX = (t = 0) => (TOWERS === 1 ? 0 : (t === 0 ? -1 : 1) * (W / 2 + GAP / 2))
+const TOP = Math.max(...FLOORS.map((f) => f.n))
 
 const PAL = { slab: '#2A323C', edge: '#1D232B', floor: '#D9D4CB', wall: '#39434F', trim: '#1C222A', col: '#1C222A', plaza: '#E9EDF1', street: '#CBD2D9' }
 
@@ -35,9 +41,18 @@ const LAYOUT: Record<string, [number, number]> = {
   leo: [-1.4, BACK], vale: [1.4, BACK], martin: [-1.4, FRONT], caro: [1.4, FRONT],
 }
 
+// vidriera: 3 escritorios atrás y 2 adelante; en Dirección, Bruno va al medio de atrás
+const SHOW_SLOTS: [number, number][] = [[-2.6, BACK], [0, BACK], [2.6, BACK], [-1.3, FRONT], [1.3, FRONT]]
+const SHOW_SLOTS_DIR: [number, number][] = [[-2.9, BACK], [2.9, BACK], [-2.6, FRONT], [0, FRONT], [2.6, FRONT]]
+
 function buildSpots(): Spots {
   const s: Spots = {}
-  for (const f of FLOORS) for (const a of agentsOn(f.id)) s[a.id] = [LAYOUT[a.id]?.[0] ?? 0, floorY(f.n), LAYOUT[a.id]?.[1] ?? 0]
+  for (const f of FLOORS) {
+    agentsOn(f.id).forEach((a, i) => {
+      const [x, z] = SHOW ? (f.id === 'direccion' ? SHOW_SLOTS_DIR : SHOW_SLOTS)[i] : [LAYOUT[a.id]?.[0] ?? 0, LAYOUT[a.id]?.[1] ?? 0]
+      s[a.id] = [x + towerX(f.tower), floorY(f.n), z]
+    })
+  }
   return s
 }
 const SPOTS = buildSpots()
@@ -48,6 +63,18 @@ const BZ = -D / 2 + 0.3 // pegado a la pared de atrás
 function tintMix(hex: string, k: number) {
   const c = new THREE.Color(PAL.floor).lerp(new THREE.Color(hex), k)
   return '#' + c.getHexString()
+}
+
+function ShowDecor({ f }: { f: (typeof FLOORS)[number] }) {
+  const side = (f.n + (f.tower ?? 0)) % 2 ? 1 : -1
+  return (
+    <>
+      <Furn name="bookcaseClosedWide" position={[3.4 * side, 0, BZ]} scale={1.1} />
+      <Furn name="pottedPlant" position={[4.5, 0, 3.6]} scale={1.3} />
+      <Furn name={f.n % 2 ? 'plantSmall3' : 'plantSmall1'} position={[-4.5, 0, 3.6]} scale={1.8} />
+      {f.id !== 'direccion' && <Furn name="loungeDesignChair" position={[-4.3 * side, 0, 0.4]} rotation-y={(side * Math.PI) / 2} />}
+    </>
+  )
 }
 
 function Decor({ id }: { id: FloorId }) {
@@ -118,7 +145,7 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
   }
 
   return (
-    <group position={[0, y, 0]} visible={(overview && !touring) || focused || showcased}>
+    <group position={[towerX(f.tower), y, 0]} visible={(overview && !touring) || focused || showcased}>
       <group
         onClick={click}
         onPointerOver={(e) => {
@@ -188,19 +215,23 @@ function Floor({ f, light, focused, overview, showcased, touring }: { f: (typeof
 
       {/* alfombras bajo cada fila de escritorios, con el color del área */}
       {[BACK, FRONT].map((z) => (
-        <Furn key={z} name="rugRounded" position={[f.id === 'direccion' ? -1.6 : 0, 0.012, z - 0.3]} scale={[f.id === 'direccion' ? 3.4 : f.id === 'marketing' ? 5.4 : 3.8, 1, 2.1]} tint={{ carpet: tintMix(f.tint, 0.22), carpetDarker: tintMix(f.tint, 0.36) }} />
+        <Furn key={z} name="rugRounded" position={[SHOW ? 0 : f.id === 'direccion' ? -1.6 : 0, 0.012, z - 0.3]} scale={[SHOW ? (z === BACK || f.id === 'direccion' ? 6.4 : 3.8) : f.id === 'direccion' ? 3.4 : f.id === 'marketing' ? 5.4 : 3.8, 1, 2.1]} tint={{ carpet: tintMix(f.tint, 0.22), carpetDarker: tintMix(f.tint, 0.36) }} />
       ))}
-      <Decor id={f.id} />
+      {SHOW ? <ShowDecor f={f} /> : <Decor id={f.id} />}
       {/* cartel del equipo en la pared lateral (se ve en el recorrido y al entrar al piso) */}
       {(focused || showcased) && <WallSign name={f.name} width={5.4} position={[-W / 2 + 0.135, 1.25, -0.6]} rotation-y={Math.PI / 2} />}
-      {f.id === 'direccion' && <SupervisorDesk showTag={focused} lamps={light.lamps} />}
+      {f.id === 'direccion' && (SHOW ? (
+        <group position={[-2.8, 0, BACK - 0.2]}>
+          <SupervisorDesk showTag={focused} lamps={light.lamps} walls={false} />
+        </group>
+      ) : <SupervisorDesk showTag={focused} lamps={light.lamps} />)}
 
       {agents.map((a) => (
-        <Station key={a.id} agent={a} position={[SPOTS[a.id][0], 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} night={light.screens} showTag={focused} interactive={focused} animate={focused || showcased} />
+        <Station key={a.id} agent={a} position={[SPOTS[a.id][0] - towerX(f.tower), 0, SPOTS[a.id][2]]} lamps={light.lamps} dark={light.dark} night={light.screens} showTag={focused} interactive={focused} animate={focused || showcased} />
       ))}
 
       {overview && !touring && (
-        <Html position={[-W / 2 - 0.4, 0.9, D / 2]} center zIndexRange={[9, 0]}>
+        <Html position={[(f.tower ? 1 : -1) * (W / 2 + 0.4), 0.9, D / 2]} center zIndexRange={[9, 0]}>
           <button className="floor-tag" style={{ ['--c' as string]: f.tint }} onClick={() => setFloor(f.id)}>
             <span className="floor-n">{f.n}</span>
             <span className="flex flex-col items-start leading-tight">
@@ -297,7 +328,10 @@ export function SupervisorDesk({ showTag, lamps, walls = true }: { showTag: bool
   )
 }
 
+const WIDE = TOWERS * W + (TOWERS - 1) * GAP
+
 function Ground({ visible }: { visible: boolean }) {
+  const W = WIDE
   return (
     <group visible={visible}>
       <mesh position={[0, BASE / 2 - 0.02, 0]} receiveShadow castShadow>
@@ -315,10 +349,20 @@ function Ground({ visible }: { visible: boolean }) {
   )
 }
 
-function Roof({ visible }: { visible: boolean }) {
-  const y = floorY(FLOORS.length + 1)
+function Roofs({ visible }: { visible: boolean }) {
   return (
-    <group position={[0, y, 0]} visible={visible}>
+    <>
+      {Array.from({ length: TOWERS }, (_, t) => (
+        <Roof key={t} visible={visible} x={towerX(t)} />
+      ))}
+    </>
+  )
+}
+
+function Roof({ visible, x }: { visible: boolean; x: number }) {
+  const y = floorY(TOP + 1)
+  return (
+    <group position={[x, y, 0]} visible={visible}>
       <mesh position={[0, -0.12, 0]} castShadow receiveShadow>
         <boxGeometry args={[W + 0.3, 0.24, D + 0.3]} />
         <meshStandardMaterial color={PAL.slab} roughness={0.85} />
@@ -335,16 +379,19 @@ function Roof({ visible }: { visible: boolean }) {
   )
 }
 
-const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-W / 2 - 1.4, 0, -D / 2), new THREE.Vector3(W / 2 + 0.4, floorY(FLOORS.length + 1) + 0.4, D / 2))
+const BUILDING_BOX = new THREE.Box3(new THREE.Vector3(-WIDE / 2 - 1.4, 0, -D / 2), new THREE.Vector3(WIDE / 2 + (SHOW ? 1.4 : 0.4), floorY(TOP + 1) + 0.4, D / 2))
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
 function insets(w: number, _overview = false) {
   if (REC) return { l: 0, r: 0, t: 0, b: 0 }
-  return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
+  // en la vidriera, con el chat minimizado la oficina usa todo el ancho
+  const r = SHOW && !useCrew.getState().dock ? 16 : 380
+  return w >= 1024 ? { l: 16, r, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
   const shotKey = useCrew((s) => s.showcaseShot)
+  const dock = useCrew((s) => s.dock)
   const ref = useRef<CameraControls>(null)
   const drift = useRef(0)
   const lastTourFloor = useRef<FloorId | null>(null)
@@ -374,7 +421,7 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
       // recorrido: el equipo del piso entero, de cerca y un poco de costado
       shot.current += 1
       const side = shot.current % 2 ? 1 : -1
-      t = new THREE.Vector3(0, floorY(tour.n) + 0.5, 0.45)
+      t = new THREE.Vector3(towerX(tour.tower), floorY(tour.n) + 0.5, 0.45)
       // de costado (del lado de las caras), alternando dos ángulos
       dist = (narrow ? 2.9 : 2.3) / Math.sin(Math.atan(tanFree))
       az = side > 0 ? 1.15 : 0.8
@@ -395,7 +442,7 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
     } else {
       // vista de piso: desde arriba, solo ese piso
       const f = FLOORS.find((x) => x.id === floor)!
-      t = new THREE.Vector3(0, floorY(f.n) + 0.3, 0.4)
+      t = new THREE.Vector3(towerX(f.tower), floorY(f.n) + 0.3, 0.4)
       const r = Math.hypot(W / 2, D / 2)
       dist = (r * (narrow ? 1.05 : 0.92)) / Math.sin(Math.atan(tanFree))
       az = 0.28
@@ -427,7 +474,7 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
       if (introFly(c, p, t) || introPending()) return
     } else cancelIntro()
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, !cut)
-  }, [floor, showcase, shotKey, size.width, size.height, camera])
+  }, [floor, showcase, shotKey, size.width, size.height, camera, dock])
 
   // mientras muestra a alguien, la cámara gira despacito alrededor
   useFrame((_, dt) => {
@@ -469,8 +516,8 @@ export default function BuildingScene({ light }: { style: BuildingStyle; light: 
           color={light.sun.color}
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-12}
-          shadow-camera-right={12}
+          shadow-camera-left={SHOW ? -18 : -12}
+          shadow-camera-right={SHOW ? 18 : 12}
           shadow-camera-top={18}
           shadow-camera-bottom={-8}
           shadow-camera-far={70}
@@ -480,7 +527,7 @@ export default function BuildingScene({ light }: { style: BuildingStyle; light: 
         {FLOORS.map((f) => (
           <Floor key={f.id} f={f} light={light} focused={floor === f.id} overview={!floor} showcased={showFloor === f.id} touring={!!showcase} />
         ))}
-        <Roof visible={!floor && !showcase} />
+        <Roofs visible={!floor && !showcase} />
         {!floor && !showcase && <Packets spots={spots} lift={0.3} y={1} bulge={[0, 0, 4.4]} />}
         <CameraRig floor={floor} showcase={showcase} />
       </Canvas>

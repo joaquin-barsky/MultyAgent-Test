@@ -1,3 +1,5 @@
+import { SHOW } from '../sim/mode.js'
+
 // Cuando el agente llega a este paso, a veces frena y te pregunta. No sigue hasta que le contestás.
 export interface AskOption {
   label: string
@@ -12,7 +14,7 @@ export interface Ask {
   options: AskOption[]
 }
 
-export const ASKS: Record<string, Ask> = {
+const INMO_ASKS: Record<string, Ask> = {
   paz: {
     col: 4,
     q: 'El borrador de reserva del 2 amb. de Palermo está listo. ¿Lo mando al martillero para firmar?',
@@ -44,3 +46,6 @@ export const ASKS: Record<string, Ask> = {
     options: [{ label: 'Mandala' }, { label: 'Subila a USD 165.000' }, { label: 'Esperá, la reviso yo', stop: true }],
   },
 }
+
+// en la vidriera nadie frena a preguntar
+export const ASKS: Record<string, Ask> = SHOW ? {} : INMO_ASKS

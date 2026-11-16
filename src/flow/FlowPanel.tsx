@@ -4,6 +4,7 @@ import {
   getBezierPath, useReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { SHOW } from '../sim/mode'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Clock3, Minus, Play, Plus, Repeat2, Scan, Timer, X, Zap } from 'lucide-react'
 import { AGENT_BY_ID, FLOORS, type Agent, type FlowStep, type Preview, type Sub } from '../data/agents'
@@ -164,7 +165,7 @@ function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
           transition: 'stroke 0.3s, opacity 0.3s',
         }}
       />
-      {(d.label || (d.status === 'done' && !d.dashed)) && (
+      {(d.label || (d.status === 'done' && !d.dashed && !SHOW)) && (
         <EdgeLabelRenderer>
           <div className={`fitems ${d.label ? 'cond' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)`, ['--c' as string]: d.color }}>
             {d.label ?? `${d.items} ${d.items === 1 ? 'ítem' : 'ítems'}`}
@@ -471,7 +472,7 @@ function PanelBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <h2 className="font-display text-[21px] font-bold leading-none sm:text-[24px]">{agent.name}</h2>
               <span className="text-[13.5px] text-[var(--muted)]">{agent.role}</span>
-              <span className="rounded-lg px-2 py-0.5 text-[11.5px] font-semibold text-white" style={{ background: floor.tint }}>Piso {floor.n}, {floor.name}</span>
+              <span className="rounded-lg px-2 py-0.5 text-[11.5px] font-semibold text-white" style={{ background: floor.tint }}>{SHOW ? floor.name : `Piso ${floor.n}, ${floor.name}`}</span>
             </div>
             <p className="mt-1 truncate text-[13.5px] leading-snug max-lg:hidden">{agent.mission}</p>
           </div>

@@ -8,6 +8,7 @@ import { ASKS } from '../data/asks'
 import { AskCard } from '../ui/AskCard'
 import { localAnswer, teamSnapshot } from './snapshot'
 import { ALERTS } from '../data/alerts'
+import { SHOW } from '../sim/mode'
 
 type Msg = { id: number; role: 'user' | 'assistant'; content: string; local?: boolean; notice?: boolean; ask?: string }
 
@@ -18,7 +19,7 @@ let mid = 1
 // los mensajes viven fuera del componente para no perderlos al cerrar el chat en el celular
 type ChatState = { msgs: Msg[]; busy: boolean; unread: number; open: number; lastTyped: number }
 export const useChat = create<ChatState & { set: (p: Partial<ChatState>) => void }>((set) => ({
-  msgs: [{ id: mid++, role: 'assistant', content: 'Hola, soy Bruno. Veo todo lo que hace el equipo en los cinco pisos. Preguntame lo que quieras y te lo cuento. Si pasa algo importante, te aviso.' }],
+  msgs: [{ id: mid++, role: 'assistant', content: SHOW ? 'Hola, soy Bruno. Veo todo lo que hace el equipo en las 8 áreas. Preguntame lo que quieras y te lo cuento.' : 'Hola, soy Bruno. Veo todo lo que hace el equipo en los cinco pisos. Preguntame lo que quieras y te lo cuento. Si pasa algo importante, te aviso.' }],
   busy: false,
   unread: 0,
   open: 0,
@@ -48,6 +49,8 @@ export function useBrunoNotices() {
     [],
   )
   useEffect(() => {
+    // en la vidriera Bruno no manda avisos solo
+    if (SHOW) return
     let sent = 0
     let seenFeed = 0
     const tick = () => {

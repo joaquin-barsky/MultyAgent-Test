@@ -1,5 +1,7 @@
 // Equipo de agentes de la demo (una inmobiliaria). Datos simulados para mostrar el concepto.
 import { EXTRA_AGENTS } from './agents-extra.js'
+import { GENERIC_AGENTS, GENERIC_COMPANY, GENERIC_FLOORS } from './generic.js'
+import { SHOW } from '../sim/mode.js'
 
 export type IconKey =
   | 'whatsapp' | 'instagram' | 'tiktok' | 'youtube' | 'claude' | 'sheets' | 'calendar'
@@ -75,9 +77,9 @@ export interface Agent {
   cost: number
 }
 
-export type FloorId = 'direccion' | 'marketing' | 'finanzas' | 'administracion' | 'ventas'
+export type FloorId = 'direccion' | 'marketing' | 'finanzas' | 'administracion' | 'ventas' | 'atencion' | 'producto' | 'operaciones' | 'personas'
 
-export const FLOORS: { id: FloorId; name: string; n: number; tint: string }[] = [
+const INMO_FLOORS: { id: FloorId; name: string; n: number; tint: string; tower?: number }[] = [
   { id: 'direccion', name: 'Dirección', n: 5, tint: '#2E7DFF' },
   { id: 'marketing', name: 'Marketing', n: 4, tint: '#FF3D9A' },
   { id: 'finanzas', name: 'Finanzas', n: 3, tint: '#3DAE2B' },
@@ -86,8 +88,11 @@ export const FLOORS: { id: FloorId; name: string; n: number; tint: string }[] = 
 ]
 
 
+/** pisos o zonas: en la vidriera (/v1, /v2…) son las 8 áreas de la empresa genérica */
+export const FLOORS = SHOW ? GENERIC_FLOORS : INMO_FLOORS
+
 /** cómo se le describe la empresa a Bruno */
-export const COMPANY = 'Inmobiliaria de Buenos Aires que vende y alquila propiedades'
+export const COMPANY = SHOW ? GENERIC_COMPANY : 'Inmobiliaria de Buenos Aires que vende y alquila propiedades'
 
 export const SUPERVISOR = {
   name: 'Bruno',
@@ -104,7 +109,7 @@ const HAIKU: Sub = { kind: 'model', label: 'Claude Haiku', icon: 'claude' }
 const SONNET: Sub = { kind: 'model', label: 'Claude Sonnet', icon: 'claude' }
 const MEM: Sub = { kind: 'memory', label: 'Memoria del equipo', icon: 'database' }
 
-export const AGENTS: Agent[] = [
+const INMO_AGENTS: Agent[] = [
   {
     id: 'mora', name: 'Mora', role: 'Coordinadora', floor: 'direccion', color: '#2E7DFF', soft: '#DCE9FF',
     model: 'character-female-c', avatar: '/avatars/face-character-female-c.png',
@@ -303,7 +308,9 @@ export const AGENTS: Agent[] = [
   },
 ]
 
-AGENTS.push(...EXTRA_AGENTS)
+INMO_AGENTS.push(...EXTRA_AGENTS)
+
+export const AGENTS: Agent[] = SHOW ? GENERIC_AGENTS : INMO_AGENTS
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<string, Agent>
 export const agentsOn = (f: FloorId) => AGENTS.filter((a) => a.floor === f)

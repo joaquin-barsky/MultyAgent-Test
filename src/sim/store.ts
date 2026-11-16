@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { AGENTS, AGENT_BY_ID, type Agent, type FloorId } from '../data/agents'
 import { ASKS } from '../data/asks'
 import { REC } from './rec'
+import { SHOW } from './mode'
 
 /** waiting: frenó y te necesita; no sigue hasta que le contestes */
 export type Status = 'idle' | 'working' | 'waiting'
@@ -83,6 +84,9 @@ interface State {
   setChat: (v: boolean) => void
   /** tablero de tareas abierto */
   board: boolean
+  /** vidriera: chat de Bruno abierto (si no, queda minimizado en un botón) */
+  dock: boolean
+  setDock: (v: boolean) => void
   /** modo noche: el equipo sigue trabajando con la oficina a oscuras */
   night: boolean
   setNight: (v: boolean) => void
@@ -103,6 +107,8 @@ const initialRuns = Object.fromEntries(
 // quiénes arrancan apenas abrís la página
 function firstQueue() {
   const now = performance.now()
+  // en la vidriera arrancan todos, escalonados, para que la oficina se vea llena enseguida
+  if (SHOW) return AGENTS.map((a, i) => ({ id: a.id, at: now + 300 + ((i * 7919) % 40) * 160 }))
   return ([['mora', 400], ['cata', 1400], ['leo', 2600], ['teo', 3800], ['paz', 5200], ['caro', 2000], ['lucas', 3200], ['mica', 4400]] as const).map(([id, ms]) => ({ id, at: now + ms }))
 }
 
@@ -123,6 +129,8 @@ export const useCrew = create<State>((set, get) => ({
   chat: false,
   setChat: (v) => set({ chat: v }),
   board: false,
+  dock: true,
+  setDock: (v) => set({ dock: v }),
   night: typeof location !== 'undefined' && new URLSearchParams(location.search).has('noche'),
   setNight: (v) => set({ night: v }),
   setBoard: (v) => set({ board: v }),
@@ -163,10 +171,10 @@ export const useCrew = create<State>((set, get) => ({
       if (r.status === 'idle') {
         runs[a.id] = { ...r, idleFor: r.idleFor + dt }
         // de noche nadie queda libre mucho rato
-        const wake = s.night ? 3 + (a.id.charCodeAt(0) % 5) : a.selfStart
+        const wake = s.night || SHOW ? 2 + (a.id.charCodeAt(0) % 5) : a.selfStart
         if (wake && r.idleFor + dt > wake && !queue.some((q) => q.id === a.id)) {
           queue = [...queue, { id: a.id, at: now }]
-          feed = [{ id: seq++, at: Date.now(), from: a.id, text: a.selfStartText ?? 'arrancó solo' }, ...feed]
+          if (!SHOW) feed = [{ id: seq++, at: Date.now(), from: a.id, text: a.selfStartText ?? 'arrancó solo' }, ...feed]
         }
         continue
       }

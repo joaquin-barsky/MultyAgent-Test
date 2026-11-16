@@ -11,12 +11,14 @@ import { Station } from '../three/Station'
 import { WallSign, paintedWall } from '../three/WallSign'
 import { SupervisorDesk } from './BuildingScene'
 import { cancelIntro, introFly, introPending } from './intro'
+import { SHOW } from '../sim/mode'
 
 // Variante "planta libre": un solo piso grande, dividido en zonas por área.
 // Atrás: Dirección y Marketing contra la pared del fondo. Adelante: Finanzas, Administración y Ventas, con una pared baja detrás.
 
-const W = 24
-const D = 15
+// en la vidriera son 8 áreas (4 atrás y 4 adelante), así que el piso es más grande
+const W = SHOW ? 32 : 24
+const D = SHOW ? 16 : 15
 const H = 2.4
 const BACK_Z = -D / 2
 const MID_Z = -1 // pared baja entre las dos filas de zonas
@@ -34,7 +36,10 @@ interface Zone {
   wall: 'back' | 'mid'
 }
 
-const ZONES: Zone[] = [
+const SHOW_ZONES: Zone[] = (['direccion', 'marketing', 'ventas', 'atencion', 'producto', 'operaciones', 'finanzas', 'personas'] as FloorId[]).map((id, i) => ({
+  id, x0: -16 + (i % 4) * 8, x1: -8 + (i % 4) * 8, z0: i < 4 ? BACK_Z : MID_Z, z1: i < 4 ? MID_Z : D / 2, wall: i < 4 ? 'back' : 'mid',
+}))
+const ZONES: Zone[] = SHOW ? SHOW_ZONES : [
   { id: 'direccion', x0: -12, x1: -1, z0: BACK_Z, z1: MID_Z, wall: 'back' },
   { id: 'marketing', x0: -1, x1: 12, z0: BACK_Z, z1: MID_Z, wall: 'back' },
   { id: 'finanzas', x0: -12, x1: -4, z0: MID_Z, z1: D / 2, wall: 'mid' },
@@ -44,7 +49,22 @@ const ZONES: Zone[] = [
 const ZONE_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<FloorId, Zone>
 const center = (z: Zone) => new THREE.Vector3((z.x0 + z.x1) / 2, 0, (z.z0 + z.z1) / 2)
 
-const SPOTS: Spots = {
+/** vidriera: 5 escritorios por área (3 atrás y 2 adelante); en Dirección el del medio de atrás es el de Bruno */
+function showSpots(): Spots {
+  const s: Spots = {}
+  for (const z of SHOW_ZONES) {
+    const cx = (z.x0 + z.x1) / 2
+    const r1 = z.z0 + (z.wall === 'back' ? 2.2 : 2.9)
+    const r2 = r1 + 2.8
+    const slots: [number, number][] = z.id === 'direccion'
+      ? [[-2.7, r1], [2.7, r1], [-2.6, r2], [0, r2], [2.6, r2]]
+      : [[-2.6, r1], [0, r1], [2.6, r1], [-1.3, r2], [1.3, r2]]
+    agentsOn(z.id).forEach((a, i) => (s[a.id] = [cx + slots[i][0], 0, slots[i][1]]))
+  }
+  return s
+}
+
+const SPOTS: Spots = SHOW ? showSpots() : {
   mora: [-10.1, 0, -5.2], tomi: [-3.3, 0, -5.2], sol: [-8.4, 0, -2.4],
   lupa: [1.0, 0, -5.4], cata: [4.6, 0, -5.4], rolo: [8.2, 0, -5.4], fran: [2.8, 0, -2.6], mica: [6.4, 0, -2.6],
   nina: [-9.4, 0, 1.9], teo: [-6.6, 0, 1.9], gaby: [-8, 0, 4.7],
@@ -149,16 +169,37 @@ function Shell({ light }: { light: Light }) {
         </mesh>
       ))}
       {/* separadores bajos de vidrio entre zonas */}
-      {[
-        { x: -4, z0: MID_Z, z1: D / 2 - 1.2 },
-        { x: 4, z0: MID_Z, z1: D / 2 - 1.2 },
-      ].map((g) => (
+      {(SHOW ? [-8, 0, 8] : [-4, 4]).map((x) => ({ x, z0: MID_Z, z1: D / 2 - 1.2 })).map((g) => (
         <mesh key={`${g.x}${g.z0}`} position={[g.x, 0.5, (g.z0 + g.z1) / 2]}>
           <boxGeometry args={[0.04, 1.0, g.z1 - g.z0]} />
           <meshPhysicalMaterial color="#BFE0EE" transparent opacity={0.3} roughness={0.05} />
         </mesh>
       ))}
       {/* algo de vida: plantas, café y un living en Dirección */}
+      {SHOW ? <ShowDecor /> : <InmoDecor />}
+    </group>
+  )
+}
+
+function ShowDecor() {
+  return (
+    <>
+      <Furn name="pottedPlant" position={[-15.3, 0, 7.3]} scale={1.4} />
+      <Furn name="pottedPlant" position={[15.3, 0, -7.3]} scale={1.4} />
+      <Furn name="pottedPlant" position={[-0.4, 0, -1.6]} scale={1.2} />
+      <Furn name="plantSmall3" position={[7.6, 0, -1.6]} scale={2} />
+      <Furn name="kitchenBar" position={[15.2, 0, 7.1]} rotation-y={-Math.PI / 2} />
+      <Furn name="kitchenCoffeeMachine" position={[15.25, 0.42, 7.1]} rotation-y={-Math.PI / 2} />
+      <Furn name="bookcaseClosedWide" position={[14.2, 0, BACK_Z + 0.45]} scale={1.1} />
+      <Furn name="pottedPlant" position={[-8, 0, 7.4]} scale={1.2} />
+      <Furn name="pottedPlant" position={[8, 0, 7.4]} scale={1.2} />
+    </>
+  )
+}
+
+function InmoDecor() {
+  return (
+    <>
       <Furn name="pottedPlant" position={[-11.3, 0, 6.8]} scale={1.4} />
       <Furn name="pottedPlant" position={[11.3, 0, -6.8]} scale={1.4} />
       <Furn name="pottedPlant" position={[-1.7, 0, -1.6]} scale={1.2} />
@@ -166,19 +207,22 @@ function Shell({ light }: { light: Light }) {
       <Furn name="kitchenCoffeeMachine" position={[11.25, 0.42, 6.6]} rotation-y={-Math.PI / 2} />
       <Furn name="loungeDesignSofa" position={[-11.3, 0, -2.2]} rotation-y={Math.PI / 2} tint={{ carpet: '#2E7DFF' }} />
       <Furn name="bookcaseClosedWide" position={[10.2, 0, BACK_Z + 0.45]} scale={1.1} />
-    </group>
+    </>
   )
 }
 
 /** espacio que tapan los paneles de la interfaz, en píxeles */
 function insets(w: number) {
-  return w >= 1024 ? { l: 16, r: 380, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
+  // en la vidriera, con el chat minimizado la oficina usa todo el ancho
+  const r = SHOW && !useCrew.getState().dock ? 16 : 380
+  return w >= 1024 ? { l: 16, r, t: 84, b: 16 } : { l: 0, r: 0, t: 64, b: 170 }
 }
 
 function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: string | null }) {
   const ref = useRef<CameraControls>(null)
   const drift = useRef(0)
   const shotKey = useCrew((s) => s.showcaseShot)
+  const dock = useCrew((s) => s.dock)
   const size = useThree((s) => s.size)
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
 
@@ -228,7 +272,7 @@ function CameraRig({ floor, showcase }: { floor: FloorId | null; showcase: strin
       if (introFly(c, p, t) || introPending()) return
     } else cancelIntro()
     c.setLookAt(p.x, p.y, p.z, t.x, t.y, t.z, true)
-  }, [floor, showcase, shotKey, size.width, size.height, camera])
+  }, [floor, showcase, shotKey, size.width, size.height, camera, dock])
 
   useFrame((_, dt) => {
     if (drift.current && ref.current) ref.current.rotate(drift.current * dt, 0, true)
@@ -265,22 +309,23 @@ export default function OpenPlanScene({ light }: { light: Light }) {
           color={light.sun.color}
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-16}
-          shadow-camera-right={16}
-          shadow-camera-top={14}
-          shadow-camera-bottom={-14}
+          shadow-camera-left={SHOW ? -22 : -16}
+          shadow-camera-right={SHOW ? 22 : 16}
+          shadow-camera-top={SHOW ? 16 : 14}
+          shadow-camera-bottom={SHOW ? -16 : -14}
           shadow-camera-far={90}
           shadow-bias={-0.0004}
         />
         {/* luz de oficina */}
-        <pointLight position={[-6, 3.2, -3]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 2.5 : light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
-        <pointLight position={[6, 3.2, 3]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 2.5 : light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
+        {(SHOW ? [[-10, -3], [10, -3], [-4, 3.5], [4, 3.5]] : [[-6, -3], [6, 3]]).map(([x, z]) => (
+          <pointLight key={`${x}${z}`} position={[x, 3.2, z]} color={light.screens ? '#6F8FD0' : light.lamps > 0 ? '#FFD9A3' : '#FFF6EA'} intensity={light.screens ? 2.5 : light.lamps > 0 ? 26 * light.lamps : 12} distance={18} decay={1.4} />
+        ))}
         <Shell light={light} />
         {ZONES.map((z) => (
           <ZoneArea key={z.id} z={z} light={light} focused={floor === z.id} overview={!floor} touring={!!showcase} />
         ))}
         {/* Bruno al centro de Dirección, sin paredes */}
-        <group position={[-9.5, 0, -5.4]}>
+        <group position={SHOW ? [-14.8, 0, -6.0] : [-9.5, 0, -5.4]}>
           <SupervisorDesk showTag lamps={light.lamps} walls={false} />
         </group>
         {!showcase && <Packets spots={SPOTS} lift={1.4} y={1.1} />}
