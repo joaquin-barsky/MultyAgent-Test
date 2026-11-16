@@ -50,7 +50,7 @@ export function VersionPicker() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.16 }}
-            className="glass absolute left-0 top-[64px] w-[290px] origin-top-left rounded-[20px] p-1.5"
+            className="glass absolute left-0 top-[64px] w-[320px] origin-top-left rounded-[20px] p-1.5"
             role="listbox"
             aria-label="Versiones de la oficina"
           >
